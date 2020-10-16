@@ -1,19 +1,27 @@
-import * as core from '@actions/core'
-import {wait} from './wait'
+import * as core from "@actions/core";
+
+import { getUserProfile } from "./lcapi";
+import { wait } from "./wait";
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    const username: string = core.getInput("leetcode-username");
+    console.log(`LeetCode username: ${username}`);
+    const userProfile = await getUserProfile(username);
+    console.log(userProfile.matchedUser.profile);
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    
+    const ms: string = core.getInput("milliseconds");
+    core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
 
-    core.setOutput('time', new Date().toTimeString())
+    core.debug(new Date().toTimeString());
+    await wait(parseInt(ms, 10));
+    core.debug(new Date().toTimeString());
+
+    core.setOutput("time", new Date().toTimeString());
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 
-run()
+run();

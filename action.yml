@@ -1,11 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Sync Leetcode Activity Graph'
+description: 'Populate the GitHub contribution graph with activies from LeetCode submissions'
+author: 'Hung-I Wang <whygowe@gmail.com>'
 inputs:
-  milliseconds: # change this
+  leetcode-username: # change this
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'The username of a LeetCode account from where to grab activities'
 runs:
   using: 'node12'
   main: 'dist/index.js'

@@ -1,8 +1,8 @@
 {
-  "name": "typescript-action",
+  "name": "sync-leetcode-activities-action",
   "version": "0.0.0",
   "private": true,
-  "description": "TypeScript template action",
+  "description": "A GitHub action that helps populate the contribution graph with activies from LeetCode submissions",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -13,6 +13,7 @@
     "test": "jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
+  "homepage": "https://github.com/gowee/sync-leetcode-activities-action",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/actions/typescript-action.git"
@@ -25,7 +26,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.6"
+    "@actions/core": "^1.2.6",
+    "@actions/github": "^4.0.0",
+    "@types/node-fetch": "^2.5.7",
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
