@@ -57,7 +57,7 @@ export interface AcSubmissionNumEntityOrTotalSubmissionNumEntity {
 export async function getUserProfile(
   username: string
 ): Promise<UserProfileQueryResult> {
-  const data = {
+  const payload = {
     operationName: "getUserProfile",
     variables: { username },
     query:
@@ -72,14 +72,14 @@ export async function getUserProfile(
       "Cache-Control": "no-cache",
     },
     // "referrer": "https://leetcode.com/",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
     method: "POST",
   });
 
-  const result = await response.json();
-  result.matchedUser.submissionCalendar = JSON.parse(
-    result.matchedUser.submissionCalendar
+  const data = (await response.json()).data;
+  data.matchedUser.submissionCalendar = JSON.parse(
+    data.matchedUser.submissionCalendar
   );
 
-  return result;
+  return data;
 }

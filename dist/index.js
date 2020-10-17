@@ -3396,7 +3396,7 @@ const node_fetch_1 = __importDefault(__webpack_require__(467));
 const common_1 = __webpack_require__(979);
 function getUserProfile(username) {
     return __awaiter(this, void 0, void 0, function* () {
-        const data = {
+        const payload = {
             operationName: "getUserProfile",
             variables: { username },
             query: "query getUserProfile($username: String!) {\n  allQuestionsCount {\n    difficulty\n    count\n    __typename\n  }\n  matchedUser(username: $username) {\n    username\n    socialAccounts\n    githubUrl\n    contributions {\n      points\n      questionCount\n      testcaseCount\n      __typename\n    }\n    profile {\n      realName\n      websites\n      countryName\n      skillTags\n      company\n      school\n      starRating\n      aboutMe\n      userAvatar\n      reputation\n      ranking\n      __typename\n    }\n    submissionCalendar\n    submitStats {\n      acSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      totalSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
@@ -3409,12 +3409,12 @@ function getUserProfile(username) {
                 "Cache-Control": "no-cache",
             },
             // "referrer": "https://leetcode.com/",
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
             method: "POST",
         });
-        const result = yield response.json();
-        result.matchedUser.submissionCalendar = JSON.parse(result.matchedUser.submissionCalendar);
-        return result;
+        const data = (yield response.json()).data;
+        data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar);
+        return data;
     });
 }
 exports.getUserProfile = getUserProfile;
