@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { USER_AGENT } from "./utils";
+import { USER_AGENT } from "./common";
 
 // Generated with https://jvilk.com/MakeTypes/ based on response of LeetCode API
 export interface UserProfileQueryResult {
