@@ -101,20 +101,22 @@ const core = __importStar(__webpack_require__(186));
 const lcapi_1 = __webpack_require__(910);
 const wait_1 = __webpack_require__(817);
 const git_1 = __webpack_require__(374);
+const console_1 = __webpack_require__(82);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.getInput("leetcode");
+            // core.getInput("leetcode");
             const username = core.getInput("leetcode-username");
+            console_1.assert(username);
             core.info(`LeetCode username: ${username}`);
             const userProfile = yield lcapi_1.getUserProfile(username);
-            console.log(userProfile.matchedUser.profile);
-            const git = new git_1.GitController();
-            yield git.prepare();
+            core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
+            const git = yield git_1.GitController.createAsync(process.cwd());
             const lastCommitted = yield git.getLatestTimestamp();
+            core.info(`Entries count: ${Object.keys(userProfile.matchedUser.submissionCalendar).length}`);
             for (const timestamp of Object.keys(userProfile.matchedUser.submissionCalendar)) {
                 // TODO: bisect?
-                const date = new Date(parseInt(timestamp, 10)); // TODO: iterator map
+                const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
                 if (date > lastCommitted) {
                     yield git.commit(`Synced activities at ${date.toDateString()}`, true, {
                         GIT_AUTHOR_DATE: date.toISOString(),
@@ -122,6 +124,7 @@ function run() {
                         GIT_COMMITTER_EMAIL: "",
                     });
                 }
+                // console.log(date, lastCommitted);
             }
             yield git.push();
             const ms = "3000";
@@ -1166,36 +1169,81 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitController = void 0;
+const path_1 = __importDefault(__webpack_require__(622));
 const core = __importStar(__webpack_require__(186));
 const io = __importStar(__webpack_require__(436));
 const exec_1 = __webpack_require__(514);
 const console_1 = __webpack_require__(82);
-// import { parse } from "path";
 // class GitController
 class GitController {
-    prepare() {
+    constructor(repoPath) {
+        this.inited = false;
+        this.repoPath = repoPath;
+    }
+    static createAsync(repoPath, allowingNotInited = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const controller = new GitController(repoPath);
+            core.debug("Repo path: " + repoPath);
+            yield controller.prepare();
+            return controller;
+        });
+    }
+    prepare(allowingNotInited = false) {
         return __awaiter(this, void 0, void 0, function* () {
             this.gitPath = yield io.which("git", true);
-            core.debug("Path to git:" + this.gitPath);
-            return true;
+            core.debug("Git path: " + this.gitPath);
+            let isGitRoot = true;
+            try {
+                isGitRoot = yield this.isTopLevel();
+                this.inited = true;
+            }
+            catch (e) {
+                if (!allowingNotInited) {
+                    throw e;
+                }
+            }
+            if (!isGitRoot) {
+                throw Error(`${this.repoPath} is not a root of a git repository`);
+            }
+            core.debug(`Inited: ${this.inited}`);
         });
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
+            console_1.assert(this.gitPath);
             yield this.exec(["init"]);
+        });
+    }
+    isTopLevel() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const topLevel = yield this.getTopLevel(); // .../.git
+            console.log("Repo toplevel: " + path_1.default.resolve(topLevel));
+            return path_1.default.resolve(topLevel) === path_1.default.resolve(this.repoPath);
+        });
+    }
+    getTopLevel() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const raw = yield this.exec(["rev-parse", "--show-toplevel"]);
+            return raw.trim();
         });
     }
     getLatestTimestamp() {
         return __awaiter(this, void 0, void 0, function* () {
-            const raw = yield this.exec(["log", "-1", "--format=%at"]);
-            // console.log("test:", raw.trim());
-            return new Date(parseInt(raw.trim(), 10) * 1000);
+            console_1.assert(this.inited);
+            if (parseInt((yield this.exec(["rev-list", "--all", "--count"])).trim(), 10) === 0) {
+                return new Date(-1);
+            }
+            return new Date(parseInt((yield this.exec(["log", "-1", "--format=%at"])).trim(), 10) * 1000);
         });
     }
     commit(message, allowingEmpty = false, env) {
         return __awaiter(this, void 0, void 0, function* () {
+            console_1.assert(this.inited);
             // TODO: properly shell-quote commit message
             let args = ["commit", "-m", `"${message.replace('"', '\\"')}"`];
             if (allowingEmpty) {
@@ -1207,16 +1255,17 @@ class GitController {
     }
     push() {
         return __awaiter(this, void 0, void 0, function* () {
+            console_1.assert(this.inited);
             yield this.exec(["push"]);
         });
     }
     exec(args, additionalEnv) {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.gitPath);
             // Ref: https://github.com/actions/checkout/blob/a81bbbf8298c0fa03ea29cdc473d45769f953675/src/git-command-manager.ts#L425
             const env = Object.assign(Object.assign({}, process.env), additionalEnv);
             let stdout = [];
             const options = {
+                cwd: this.repoPath,
                 env,
                 listeners: {
                     stdout: (data) => {

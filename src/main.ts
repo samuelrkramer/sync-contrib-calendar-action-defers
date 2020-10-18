@@ -3,24 +3,26 @@ import * as core from "@actions/core"
 import { getUserProfile } from "./lcapi"
 import { wait } from "./wait"
 import { GitController } from "./git"
+import { assert } from "console"
 
 async function run(): Promise<void> {
   try {
-    core.getInput("leetcode")
+    // core.getInput("leetcode");
 
     const username = core.getInput("leetcode-username")
+    assert(username)
     core.info(`LeetCode username: ${username}`)
     const userProfile = await getUserProfile(username)
-    console.log(userProfile.matchedUser.profile)
+    core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
 
-    const git = new GitController()
-    await git.prepare()
+    const git = await GitController.createAsync(process.cwd())
 
     const lastCommitted = await git.getLatestTimestamp()
 
+    core.info(`Entries count: ${Object.keys(userProfile.matchedUser.submissionCalendar).length}`)
     for (const timestamp of Object.keys(userProfile.matchedUser.submissionCalendar)) {
       // TODO: bisect?
-      const date = new Date(parseInt(timestamp, 10)) // TODO: iterator map
+      const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
       if (date > lastCommitted) {
         await git.commit(`Synced activities at ${date.toDateString()}`, true, {
           GIT_AUTHOR_DATE: date.toISOString(),
@@ -28,6 +30,7 @@ async function run(): Promise<void> {
           GIT_COMMITTER_EMAIL: "",
         })
       }
+      // console.log(date, lastCommitted);
     }
     await git.push()
 
