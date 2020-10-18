@@ -40,12 +40,12 @@ export class GitController {
   }
 
   async configUser(name?: string, email?: string) {
-    assert(this.gitPath);
+    assert(this.gitPath)
     if (name !== undefined) {
-      await this.exec(["config", "user.name", name]);
+      await this.exec(["config", "user.name", name])
     }
     if (email !== undefined) {
-      await this.exec(["config", "user.email", email]);
+      await this.exec(["config", "user.email", email])
     }
   }
 
@@ -65,14 +65,32 @@ export class GitController {
     return raw.trim()
   }
 
-  async getLatestTimestamp(): Promise<Date> {
+  async getLatestTimestamp(filters?: {
+    author?: string
+    committer?: string
+    message?: string
+  }): Promise<Date> {
     assert(this.inited)
-    if (parseInt((await this.exec(["rev-list", "--all", "--count"])).trim(), 10) === 0) {
-      return new Date(-1)
+    const filterArgs = []
+    // TODO: shell quote
+    if (filters?.author !== undefined) {
+      filterArgs.push("--author", `"${filters.author}"`)
     }
-    return new Date(parseInt((await this.exec(["log", "-1", "--format=%at"])).trim(), 10) * 1000)
-  }
+    if (filters?.committer !== undefined) {
+      filterArgs.push("--committer", `"${filters.committer}"`)
+    }
+    if (filters?.message !== undefined) {
+      filterArgs.push("--grep", `${filters.message}`)
+    }
 
+    const rlArgs = ["rev-list", "--all", "--count"]
+    if (parseInt((await this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
+      return new Date(-1)
+    } else {
+      const logArgs = ["log", "-1", "--format=%at"]
+      return new Date(parseInt((await this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000)
+    }
+  }
 
   async commit(message: string, allowingEmpty: boolean = false, env: { [key: string]: string }) {
     assert(this.inited)

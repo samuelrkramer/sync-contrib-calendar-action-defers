@@ -4,6 +4,7 @@ import { getUserProfile } from "./lcapi"
 import { wait } from "./wait"
 import { GitController } from "./git"
 import { assert } from "console"
+import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
 
 async function run(): Promise<void> {
   try {
@@ -20,7 +21,7 @@ async function run(): Promise<void> {
 
     const git = await GitController.createAsync(process.cwd())
 
-    const lastCommitted = await git.getLatestTimestamp()
+    const lastCommitted = await git.getLatestTimestamp({committer: COMMITTER_NAME})
 
     core.info(`Entries count: ${Object.keys(userProfile.matchedUser.submissionCalendar).length}`)
     for (const timestamp of Object.keys(userProfile.matchedUser.submissionCalendar)) {
@@ -31,8 +32,8 @@ async function run(): Promise<void> {
           GIT_AUTHOR_DATE: date.toISOString(),
           GIT_AUTHOR_NAME: authorName,
           GIT_AUTHOR_EMAIL: authorEmail,
-          GIT_COMMITTER_NAME: "SyncContribCalBot",
-          GIT_COMMITTER_EMAIL: "",
+          GIT_COMMITTER_NAME: COMMITTER_NAME,
+          GIT_COMMITTER_EMAIL: COMMITTER_EMAIL,
         })
       }
       // console.log(date, lastCommitted);

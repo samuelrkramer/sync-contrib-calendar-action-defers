@@ -31,10 +31,10 @@ test("test runs", async () => {
   cp.execSync(`git config user.email test@localhost`, { cwd: tempRepoPath })
   cp.execSync(`git commit -m "Init" --allow-empty`, {
     cwd: tempRepoPath,
-    env: {
-      GIT_AUTHOR_DATE: new Date(0).toISOString(),
-      GIT_COMMITTER_DATE: new Date(0).toISOString(),
-    },
+    // env: {
+    //   GIT_AUTHOR_DATE: new Date(0).toISOString(),
+    //   GIT_COMMITTER_DATE: new Date(0).toISOString(),
+    // },
   })
   cp.execSync(`git remote add dummy file://${tempRemotePath}`, {
     cwd: tempRepoPath,
@@ -42,7 +42,10 @@ test("test runs", async () => {
   cp.execSync(`git push -u dummy master`, { cwd: tempRepoPath })
 
   try {
-    process.env["INPUT_LEETCODE_USERNAME"] = "gowe"
+    if (!process.env.hasOwnProperty("INPUT_LEETCODE_USERNAME")) {
+      // allow overriding for local testing
+      process.env["INPUT_LEETCODE_USERNAME"] = "test"
+    }
     process.env["INPUT_AUTHOR_NAME"] = "Someone"
     process.env["INPUT_AUTHOR_EMAIL"] = "Someone@localhost"
     const ip = path.join(__dirname, "..", "lib", "main.js")
