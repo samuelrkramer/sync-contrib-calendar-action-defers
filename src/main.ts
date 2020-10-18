@@ -21,24 +21,29 @@ async function run(): Promise<void> {
 
     const git = await GitController.createAsync(process.cwd())
 
-    const lastCommitted = await git.getLatestTimestamp({committer: COMMITTER_NAME})
+    const lastCommitted = await git.getLatestTimestamp({ committer: COMMITTER_NAME })
 
-    core.info(`Entries count: ${Object.keys(userProfile.matchedUser.submissionCalendar).length}`)
-    for (const timestamp of Object.keys(userProfile.matchedUser.submissionCalendar)) {
+    const submissionCalendar = userProfile.matchedUser.submissionCalendar
+    let daysCommited = 0
+    for (const timestamp of Object.keys(submissionCalendar)) {
       // TODO: bisect?
       const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
       if (date > lastCommitted) {
-        await git.commit(`Synced activities at ${date.toDateString()}`, true, {
-          GIT_AUTHOR_DATE: date.toISOString(),
-          GIT_AUTHOR_NAME: authorName,
-          GIT_AUTHOR_EMAIL: authorEmail,
-          GIT_COMMITTER_NAME: COMMITTER_NAME,
-          GIT_COMMITTER_EMAIL: COMMITTER_EMAIL,
-        })
+        daysCommited += 1
+        for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+          await git.commit(`Synced activities at ${date.toDateString()}`, true, {
+            GIT_AUTHOR_DATE: date.toISOString(),
+            GIT_AUTHOR_NAME: authorName,
+            GIT_AUTHOR_EMAIL: authorEmail,
+            GIT_COMMITTER_NAME: COMMITTER_NAME,
+            GIT_COMMITTER_EMAIL: COMMITTER_EMAIL,
+          })
+        }
       }
       // console.log(date, lastCommitted);
     }
     await git.push()
+    core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`)
 
     const ms: string = "3000"
     core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
