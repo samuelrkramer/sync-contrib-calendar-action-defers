@@ -105,10 +105,13 @@ const console_1 = __webpack_require__(82);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // core.getInput("leetcode");
-            const username = core.getInput("leetcode-username");
+            const username = core.getInput("leetcode_username");
+            const authorName = core.getInput("author_name");
+            const authorEmail = core.getInput("author_email");
             console_1.assert(username);
-            core.info(`LeetCode username: ${username}`);
+            console_1.assert(authorName);
+            console_1.assert(authorEmail);
+            core.info(`LeetCode username: ${username}\nAuthor: ${authorName} <${authorEmail}>`);
             const userProfile = yield lcapi_1.getUserProfile(username);
             core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
             const git = yield git_1.GitController.createAsync(process.cwd());
@@ -120,6 +123,8 @@ function run() {
                 if (date > lastCommitted) {
                     yield git.commit(`Synced activities at ${date.toDateString()}`, true, {
                         GIT_AUTHOR_DATE: date.toISOString(),
+                        GIT_AUTHOR_NAME: authorName,
+                        GIT_AUTHOR_EMAIL: authorEmail,
                         GIT_COMMITTER_NAME: "SyncContribCalBot",
                         GIT_COMMITTER_EMAIL: "",
                     });
@@ -1211,6 +1216,17 @@ class GitController {
                 throw Error(`${this.repoPath} is not a root of a git repository`);
             }
             core.debug(`Inited: ${this.inited}`);
+        });
+    }
+    configUser(name, email) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console_1.assert(this.gitPath);
+            if (name !== undefined) {
+                yield this.exec(["config", "user.name", name]);
+            }
+            if (email !== undefined) {
+                yield this.exec(["config", "user.email", email]);
+            }
         });
     }
     init() {
