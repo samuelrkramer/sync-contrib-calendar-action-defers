@@ -7,11 +7,14 @@ import { assert } from "console"
 
 async function run(): Promise<void> {
   try {
-    // core.getInput("leetcode");
-
-    const username = core.getInput("leetcode-username")
+    const username = core.getInput("leetcode_username")
+    const authorName = core.getInput("author_name")
+    const authorEmail = core.getInput("author_email")
     assert(username)
-    core.info(`LeetCode username: ${username}`)
+    assert(authorName)
+    assert(authorEmail)
+
+    core.info(`LeetCode username: ${username}\nAuthor: ${authorName} <${authorEmail}>`)
     const userProfile = await getUserProfile(username)
     core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
 
@@ -26,6 +29,8 @@ async function run(): Promise<void> {
       if (date > lastCommitted) {
         await git.commit(`Synced activities at ${date.toDateString()}`, true, {
           GIT_AUTHOR_DATE: date.toISOString(),
+          GIT_AUTHOR_NAME: authorName,
+          GIT_AUTHOR_EMAIL: authorEmail,
           GIT_COMMITTER_NAME: "SyncContribCalBot",
           GIT_COMMITTER_EMAIL: "",
         })

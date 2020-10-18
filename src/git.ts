@@ -39,6 +39,16 @@ export class GitController {
     core.debug(`Inited: ${this.inited}`)
   }
 
+  async configUser(name?: string, email?: string) {
+    assert(this.gitPath);
+    if (name !== undefined) {
+      await this.exec(["config", "user.name", name]);
+    }
+    if (email !== undefined) {
+      await this.exec(["config", "user.email", email]);
+    }
+  }
+
   async init() {
     assert(this.gitPath)
     await this.exec(["init"])
@@ -62,6 +72,7 @@ export class GitController {
     }
     return new Date(parseInt((await this.exec(["log", "-1", "--format=%at"])).trim(), 10) * 1000)
   }
+
 
   async commit(message: string, allowingEmpty: boolean = false, env: { [key: string]: string }) {
     assert(this.inited)

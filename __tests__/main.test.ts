@@ -42,8 +42,9 @@ test("test runs", async () => {
   cp.execSync(`git push -u dummy master`, { cwd: tempRepoPath })
 
   try {
-    process.env["INPUT_LEETCODE-USERNAME"] = "test"
-    // const nodePath = await io.which("node", true);
+    process.env["INPUT_LEETCODE_USERNAME"] = "gowe"
+    process.env["INPUT_AUTHOR_NAME"] = "Someone"
+    process.env["INPUT_AUTHOR_EMAIL"] = "Someone@localhost"
     const ip = path.join(__dirname, "..", "lib", "main.js")
     const options: cp.ExecSyncOptions = {
       cwd: tempRepoPath,

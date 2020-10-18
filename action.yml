@@ -6,7 +6,15 @@ inputs:
     required: true
     description: "GitHub personal access token (PAT)"
     default: ${{ github.token }}
-  leetcode-username: # change this
+  author_name:
+    required: true
+    description: "The name of the author on behalf which the action commits"
+    default: ${{ github.actor }}
+  author_email:
+    required: true
+    description: "The email of the author on behalf which the action commits"
+    default: "${{ github.actor }}@users.noreply.github.com"
+  leetcode_username: # change this
     required: true
     description: 'The username of a LeetCode account from where to grab activities'
 runs:
