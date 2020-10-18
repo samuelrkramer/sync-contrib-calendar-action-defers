@@ -102,6 +102,7 @@ const lcapi_1 = __webpack_require__(910);
 const wait_1 = __webpack_require__(817);
 const git_1 = __webpack_require__(374);
 const console_1 = __webpack_require__(82);
+const common_1 = __webpack_require__(979);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -115,7 +116,7 @@ function run() {
             const userProfile = yield lcapi_1.getUserProfile(username);
             core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
             const git = yield git_1.GitController.createAsync(process.cwd());
-            const lastCommitted = yield git.getLatestTimestamp();
+            const lastCommitted = yield git.getLatestTimestamp({ committer: common_1.COMMITTER_NAME });
             core.info(`Entries count: ${Object.keys(userProfile.matchedUser.submissionCalendar).length}`);
             for (const timestamp of Object.keys(userProfile.matchedUser.submissionCalendar)) {
                 // TODO: bisect?
@@ -125,8 +126,8 @@ function run() {
                         GIT_AUTHOR_DATE: date.toISOString(),
                         GIT_AUTHOR_NAME: authorName,
                         GIT_AUTHOR_EMAIL: authorEmail,
-                        GIT_COMMITTER_NAME: "SyncContribCalBot",
-                        GIT_COMMITTER_EMAIL: "",
+                        GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
+                        GIT_COMMITTER_EMAIL: common_1.COMMITTER_EMAIL,
                     });
                 }
                 // console.log(date, lastCommitted);
@@ -1248,13 +1249,28 @@ class GitController {
             return raw.trim();
         });
     }
-    getLatestTimestamp() {
+    getLatestTimestamp(filters) {
         return __awaiter(this, void 0, void 0, function* () {
             console_1.assert(this.inited);
-            if (parseInt((yield this.exec(["rev-list", "--all", "--count"])).trim(), 10) === 0) {
+            const filterArgs = [];
+            // TODO: shell quote
+            if ((filters === null || filters === void 0 ? void 0 : filters.author) !== undefined) {
+                filterArgs.push("--author", `"${filters.author}"`);
+            }
+            if ((filters === null || filters === void 0 ? void 0 : filters.committer) !== undefined) {
+                filterArgs.push("--committer", `"${filters.committer}"`);
+            }
+            if ((filters === null || filters === void 0 ? void 0 : filters.message) !== undefined) {
+                filterArgs.push("--grep", `${filters.message}`);
+            }
+            const rlArgs = ["rev-list", "--all", "--count"];
+            if (parseInt((yield this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
                 return new Date(-1);
             }
-            return new Date(parseInt((yield this.exec(["log", "-1", "--format=%at"])).trim(), 10) * 1000);
+            else {
+                const logArgs = ["log", "-1", "--format=%at"];
+                return new Date(parseInt((yield this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000);
+            }
         });
     }
     commit(message, allowingEmpty = false, env) {
@@ -3698,10 +3714,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.USER_AGENT = exports.PACKAGE_IDENTIFIER = void 0;
+exports.COMMITTER_EMAIL = exports.COMMITTER_NAME = exports.USER_AGENT = exports.PACKAGE_IDENTIFIER = void 0;
 const package_json_1 = __importDefault(__webpack_require__(119));
 exports.PACKAGE_IDENTIFIER = `${package_json_1.default.name}/${package_json_1.default.NAME}`;
 exports.USER_AGENT = `${exports.PACKAGE_IDENTIFIER} (+${package_json_1.default.homepage})`;
+exports.COMMITTER_NAME = "SyncContribCalBot";
+exports.COMMITTER_EMAIL = "";
 
 
 /***/ })
