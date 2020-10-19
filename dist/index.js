@@ -99,7 +99,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
 const lcapi_1 = __webpack_require__(910);
-const wait_1 = __webpack_require__(817);
 const git_1 = __webpack_require__(374);
 const console_1 = __webpack_require__(82);
 const common_1 = __webpack_require__(979);
@@ -112,17 +111,19 @@ function run() {
             console_1.assert(username);
             console_1.assert(authorName);
             console_1.assert(authorEmail);
-            core.info(`LeetCode username: ${username}\nAuthor: ${authorName} <${authorEmail}>`);
+            core.info(`LeetCode username: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
             const userProfile = yield lcapi_1.getUserProfile(username);
             core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
             const git = yield git_1.GitController.createAsync(process.cwd());
             const lastCommitted = yield git.getLatestTimestamp({ committer: common_1.COMMITTER_NAME });
+            core.info(`Last synced: ${lastCommitted.toDateString()}`);
             const submissionCalendar = userProfile.matchedUser.submissionCalendar;
             let daysCommited = 0;
             for (const timestamp of Object.keys(submissionCalendar)) {
                 // TODO: bisect?
                 const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
                 if (date > lastCommitted) {
+                    // TODO: will it lose some new activities added in a day later?
                     daysCommited += 1;
                     for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                         yield git.commit(`Synced activities at ${date.toDateString()}`, true, {
@@ -134,16 +135,16 @@ function run() {
                         });
                     }
                 }
-                // console.log(date, lastCommitted);
             }
-            yield git.push();
             core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`);
-            const ms = "3000";
-            core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-            core.debug(new Date().toTimeString());
-            yield wait_1.wait(parseInt(ms, 10));
-            core.debug(new Date().toTimeString());
-            core.setOutput("time", new Date().toTimeString());
+            yield git.push();
+            core.info("Pushed");
+            // const ms: string = "3000"
+            // core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+            // core.debug(new Date().toTimeString())
+            // await wait(parseInt(ms, 10))
+            // core.debug(new Date().toTimeString())
+            // core.setOutput("time", new Date().toTimeString())
         }
         catch (error) {
             core.setFailed(error.message);
@@ -1243,7 +1244,7 @@ class GitController {
     }
     isTopLevel() {
         return __awaiter(this, void 0, void 0, function* () {
-            const topLevel = yield this.getTopLevel(); // .../.git
+            const topLevel = yield this.getTopLevel();
             console.log("Repo toplevel: " + path_1.default.resolve(topLevel));
             return path_1.default.resolve(topLevel) === path_1.default.resolve(this.repoPath);
         });
@@ -1258,12 +1259,11 @@ class GitController {
         return __awaiter(this, void 0, void 0, function* () {
             console_1.assert(this.inited);
             const filterArgs = [];
-            // TODO: shell quote
             if ((filters === null || filters === void 0 ? void 0 : filters.author) !== undefined) {
-                filterArgs.push("--author", `"${filters.author}"`);
+                filterArgs.push("--author", `${filters.author}`);
             }
             if ((filters === null || filters === void 0 ? void 0 : filters.committer) !== undefined) {
-                filterArgs.push("--committer", `"${filters.committer}"`);
+                filterArgs.push("--committer", `${filters.committer}`);
             }
             if ((filters === null || filters === void 0 ? void 0 : filters.message) !== undefined) {
                 filterArgs.push("--grep", `${filters.message}`);
@@ -1281,8 +1281,7 @@ class GitController {
     commit(message, allowingEmpty = false, env) {
         return __awaiter(this, void 0, void 0, function* () {
             console_1.assert(this.inited);
-            // TODO: properly shell-quote commit message
-            let args = ["commit", "-m", `"${message.replace('"', '\\"')}"`];
+            let args = ["commit", "-m", `${message}`];
             if (allowingEmpty) {
                 args.push("--allow-empty");
             }
@@ -3410,37 +3409,6 @@ module.exports = require("fs");
 /***/ (function(module) {
 
 module.exports = require("zlib");
-
-/***/ }),
-
-/***/ 817:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.wait = void 0;
-function wait(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve) => {
-            if (isNaN(milliseconds)) {
-                throw new Error("milliseconds not a number");
-            }
-            setTimeout(() => resolve("done!"), milliseconds);
-        });
-    });
-}
-exports.wait = wait;
-
 
 /***/ }),
 
