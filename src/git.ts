@@ -72,12 +72,11 @@ export class GitController {
   }): Promise<Date> {
     assert(this.inited)
     const filterArgs = []
-    // TODO: shell quote
     if (filters?.author !== undefined) {
-      filterArgs.push("--author", `"${filters.author}"`)
+      filterArgs.push("--author", `${filters.author}`)
     }
     if (filters?.committer !== undefined) {
-      filterArgs.push("--committer", `"${filters.committer}"`)
+      filterArgs.push("--committer", `${filters.committer}`)
     }
     if (filters?.message !== undefined) {
       filterArgs.push("--grep", `${filters.message}`)
@@ -94,8 +93,7 @@ export class GitController {
 
   async commit(message: string, allowingEmpty: boolean = false, env: { [key: string]: string }) {
     assert(this.inited)
-    // TODO: properly shell-quote commit message
-    let args = ["commit", "-m", `"${message.replace('"', '\\"')}"`]
+    let args = ["commit", "-m", `${message}`]
     if (allowingEmpty) {
       args.push("--allow-empty")
     }
