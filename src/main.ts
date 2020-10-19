@@ -14,8 +14,8 @@ async function run(): Promise<void> {
     assert(username)
     assert(authorName)
     assert(authorEmail)
+    core.info(`LeetCode username: ${username}\nCommit author: ${authorName} <${authorEmail}>`)
 
-    core.info(`LeetCode username: ${username}\nAuthor: ${authorName} <${authorEmail}>`)
     const userProfile = await getUserProfile(username)
     core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
 
@@ -29,6 +29,7 @@ async function run(): Promise<void> {
       // TODO: bisect?
       const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
       if (date > lastCommitted) {
+        // TODO: will it lose some new activities added in a day later?
         daysCommited += 1
         for (let i = 0; i < submissionCalendar[timestamp]; i++) {
           await git.commit(`Synced activities at ${date.toDateString()}`, true, {
@@ -40,7 +41,6 @@ async function run(): Promise<void> {
           })
         }
       }
-      // console.log(date, lastCommitted);
     }
     await git.push()
     core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`)

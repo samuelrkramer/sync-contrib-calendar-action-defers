@@ -55,7 +55,7 @@ export class GitController {
   }
 
   private async isTopLevel() {
-    const topLevel = await this.getTopLevel() // .../.git
+    const topLevel = await this.getTopLevel()
     console.log("Repo toplevel: " + path.resolve(topLevel))
     return path.resolve(topLevel) === path.resolve(this.repoPath)
   }
