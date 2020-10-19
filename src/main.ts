@@ -3,7 +3,7 @@ import * as core from "@actions/core"
 import { getUserProfile } from "./lcapi"
 import { wait } from "./wait"
 import { GitController } from "./git"
-import { assert } from "console"
+import assert from "assert"
 import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
 
 async function run(): Promise<void> {

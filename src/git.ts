@@ -2,7 +2,7 @@ import path from "path"
 import * as core from "@actions/core"
 import * as io from "@actions/io"
 import { exec, ExecOptions } from "@actions/exec"
-import { assert, timeStamp } from "console"
+import assert from "assert"
 
 // class GitController
 export class GitController {
