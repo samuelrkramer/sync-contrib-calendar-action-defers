@@ -22,7 +22,7 @@ async function run(): Promise<void> {
     const git = await GitController.createAsync(process.cwd())
 
     const lastCommitted = await git.getLatestTimestamp({ committer: COMMITTER_NAME })
-
+    core.info(`Last synced: ${lastCommitted.toDateString()}`)
     const submissionCalendar = userProfile.matchedUser.submissionCalendar
     let daysCommited = 0
     for (const timestamp of Object.keys(submissionCalendar)) {
@@ -42,8 +42,9 @@ async function run(): Promise<void> {
         }
       }
     }
-    await git.push()
     core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`)
+    await git.push()
+    core.info("Pushed")
 
     // const ms: string = "3000"
     // core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
