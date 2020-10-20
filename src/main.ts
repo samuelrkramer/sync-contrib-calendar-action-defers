@@ -23,7 +23,7 @@ async function run(): Promise<void> {
     const lastCommitted = await git.getLatestTimestamp({ committer: COMMITTER_NAME })
     core.info(`Last synced: ${lastCommitted.toString()}`)
     if (lastCommitted < new Date(0)) {
-      core.warning(`No previous commits by this action are found. Is this repo a shallow clone?`)
+      core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
     }
     const submissionCalendar = userProfile.matchedUser.submissionCalendar
     let daysCommited = 0

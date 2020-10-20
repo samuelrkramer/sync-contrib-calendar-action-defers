@@ -1,7 +1,7 @@
 import path from "path"
 import * as core from "@actions/core"
 import * as io from "@actions/io"
-import { exec, ExecOptions } from "@actions/exec"
+import { exec } from "@actions/exec"
 import assert from "assert"
 
 export class GitController {
@@ -16,11 +16,11 @@ export class GitController {
   static async createAsync(repoPath: string, allowingNotInited = false): Promise<GitController> {
     const controller = new GitController(repoPath)
     core.debug("Repo path: " + repoPath)
-    await controller.prepare()
+    await controller.prepare(allowingNotInited)
     return controller
   }
 
-  async prepare(allowingNotInited = false) {
+  async prepare(allowingNotInited = false): Promise<void> {
     this.gitPath = await io.which("git", true)
     core.debug("Git path: " + this.gitPath)
     let isGitRoot = true
@@ -38,7 +38,7 @@ export class GitController {
     core.debug(`Inited: ${this.inited}`)
   }
 
-  async configUser(name?: string, email?: string) {
+  async configUser(name?: string, email?: string): Promise<void> {
     assert(this.gitPath)
     if (name !== undefined) {
       await this.exec(["config", "user.name", name])
@@ -48,12 +48,12 @@ export class GitController {
     }
   }
 
-  async init() {
+  async init(): Promise<void> {
     assert(this.gitPath)
     await this.exec(["init"])
   }
 
-  private async isTopLevel() {
+  private async isTopLevel(): Promise<boolean> {
     const topLevel = await this.getTopLevel()
     core.debug("Repo toplevel: " + path.resolve(topLevel))
     return path.resolve(topLevel) === path.resolve(this.repoPath)
@@ -91,9 +91,13 @@ export class GitController {
     // TODO: use author or commit datetime?
   }
 
-  async commit(message: string, allowingEmpty: boolean = false, env: { [key: string]: string }) {
+  async commit(
+    message: string,
+    allowingEmpty = false,
+    env: { [key: string]: string }
+  ): Promise<void> {
     assert(this.inited)
-    let args = ["commit", "-m", `${message}`]
+    const args = ["commit", "-m", `${message}`]
     if (allowingEmpty) {
       args.push("--allow-empty")
     }
@@ -102,7 +106,7 @@ export class GitController {
     await this.exec(args, env)
   }
 
-  async push() {
+  async push(): Promise<void> {
     assert(this.inited)
     await this.exec(["push"])
   }
@@ -110,8 +114,8 @@ export class GitController {
   async exec(args: string[], additionalEnv?: { [key: string]: string }): Promise<string> {
     // Ref: https://github.com/actions/checkout/blob/a81bbbf8298c0fa03ea29cdc473d45769f953675/src/git-command-manager.ts#L425
 
-    const env = { ...(process.env as any), ...additionalEnv }
-    let stdout: string[] = []
+    const env = { ...(process.env as any), ...additionalEnv } // eslint-disable-line @typescript-eslint/no-explicit-any
+    const stdout: string[] = []
 
     const options = {
       cwd: this.repoPath,
