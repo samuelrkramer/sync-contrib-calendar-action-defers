@@ -22,7 +22,10 @@ async function run(): Promise<void> {
     const git = await GitController.createAsync(process.cwd())
 
     const lastCommitted = await git.getLatestTimestamp({ committer: COMMITTER_NAME })
-    core.info(`Last synced: ${lastCommitted.toDateString()}`)
+    core.info(`Last synced: ${lastCommitted.toString()}`)
+    if (lastCommitted < new Date(0)) {
+      core.warning(`No previous commits by this action are found. Is this repo a shallow clone?`)
+    }
     const submissionCalendar = userProfile.matchedUser.submissionCalendar
     let daysCommited = 0
     for (const timestamp of Object.keys(submissionCalendar)) {
@@ -30,6 +33,7 @@ async function run(): Promise<void> {
       const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
       if (date > lastCommitted) {
         // TODO: will it lose some new activities added in a day later?
+        // TODO: i-th commits in a day?
         daysCommited += 1
         for (let i = 0; i < submissionCalendar[timestamp]; i++) {
           await git.commit(`Synced activities at ${date.toDateString()}`, true, {

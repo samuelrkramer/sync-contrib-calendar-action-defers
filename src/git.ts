@@ -4,7 +4,6 @@ import * as io from "@actions/io"
 import { exec, ExecOptions } from "@actions/exec"
 import assert from "assert"
 
-// class GitController
 export class GitController {
   private inited = false
   private repoPath: string
@@ -56,7 +55,7 @@ export class GitController {
 
   private async isTopLevel() {
     const topLevel = await this.getTopLevel()
-    console.log("Repo toplevel: " + path.resolve(topLevel))
+    core.debug("Repo toplevel: " + path.resolve(topLevel))
     return path.resolve(topLevel) === path.resolve(this.repoPath)
   }
 
@@ -89,6 +88,7 @@ export class GitController {
       const logArgs = ["log", "-1", "--format=%at"]
       return new Date(parseInt((await this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000)
     }
+    // TODO: use author or commit datetime?
   }
 
   async commit(message: string, allowingEmpty: boolean = false, env: { [key: string]: string }) {
