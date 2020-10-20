@@ -13,7 +13,7 @@
     "test": "jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
-  "homepage": "https://github.com/gowee/sync-leetcode-activities-action",
+  "homepage": "https://github.com/gowee/sync-contrib-calendar",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/actions/typescript-action.git"
