@@ -49,13 +49,6 @@ require('./sourcemap-register.js');module.exports =
 /************************************************************************/
 /******/ ({
 
-/***/ 82:
-/***/ (function(module) {
-
-module.exports = require("console");
-
-/***/ }),
-
 /***/ 87:
 /***/ (function(module) {
 
@@ -96,11 +89,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
 const lcapi_1 = __webpack_require__(910);
 const git_1 = __webpack_require__(374);
-const console_1 = __webpack_require__(82);
+const assert_1 = __importDefault(__webpack_require__(357));
 const common_1 = __webpack_require__(979);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -108,15 +104,18 @@ function run() {
             const username = core.getInput("leetcode_username");
             const authorName = core.getInput("author_name");
             const authorEmail = core.getInput("author_email");
-            console_1.assert(username);
-            console_1.assert(authorName);
-            console_1.assert(authorEmail);
+            assert_1.default(username);
+            assert_1.default(authorName);
+            assert_1.default(authorEmail);
             core.info(`LeetCode username: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
             const userProfile = yield lcapi_1.getUserProfile(username);
             core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
             const git = yield git_1.GitController.createAsync(process.cwd());
             const lastCommitted = yield git.getLatestTimestamp({ committer: common_1.COMMITTER_NAME });
-            core.info(`Last synced: ${lastCommitted.toDateString()}`);
+            core.info(`Last synced: ${lastCommitted.toString()}`);
+            if (lastCommitted < new Date(0)) {
+                core.warning("No previous commits by this action are found. Is this repo a shallow clone?");
+            }
             const submissionCalendar = userProfile.matchedUser.submissionCalendar;
             let daysCommited = 0;
             for (const timestamp of Object.keys(submissionCalendar)) {
@@ -124,6 +123,7 @@ function run() {
                 const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
                 if (date > lastCommitted) {
                     // TODO: will it lose some new activities added in a day later?
+                    // TODO: i-th commits in a day?
                     daysCommited += 1;
                     for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                         yield git.commit(`Synced activities at ${date.toDateString()}`, true, {
@@ -139,11 +139,6 @@ function run() {
             core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`);
             yield git.push();
             core.info("Pushed");
-            // const ms: string = "3000"
-            // core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-            // core.debug(new Date().toTimeString())
-            // await wait(parseInt(ms, 10))
-            // core.debug(new Date().toTimeString())
             // core.setOutput("time", new Date().toTimeString())
         }
         catch (error) {
@@ -159,7 +154,7 @@ run();
 /***/ 119:
 /***/ (function(module) {
 
-module.exports = {"name":"sync-leetcode-activities-action","version":"0.0.0","private":true,"description":"A GitHub action that helps populate the contribution graph with activies from LeetCode submissions","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write **/*.ts","format-check":"prettier --check **/*.ts","lint":"eslint src/**/*.ts","package":"ncc build --source-map --license licenses.txt","test":"jest","all":"npm run build && npm run format && npm run lint && npm run package && npm test"},"homepage":"https://github.com/gowee/sync-leetcode-activities-action","repository":{"type":"git","url":"git+https://github.com/actions/typescript-action.git"},"keywords":["actions","node","setup"],"author":"","license":"MIT","dependencies":{"@actions/core":"^1.2.6","@actions/exec":"^1.0.4","@actions/github":"^4.0.0","@actions/io":"^1.0.2","@types/node-fetch":"^2.5.7","node-fetch":"^2.6.1"},"devDependencies":{"@types/jest":"^26.0.10","@types/node":"^14.10.0","@typescript-eslint/parser":"^3.10.1","@vercel/ncc":"^0.23.0","eslint":"^7.8.1","eslint-plugin-github":"^4.1.1","eslint-plugin-jest":"^23.20.0","jest":"^24.9.0","jest-circus":"^26.4.2","js-yaml":"^3.14.0","prettier":"2.1.1","ts-jest":"^24.3.0","typescript":"^4.0.2"}};
+module.exports = {"name":"sync-contrib-calendar-action","version":"0.0.0","private":true,"description":"A GitHub action that helps populate the contribution graph with activies from other sources","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write **/*.ts","format-check":"prettier --check **/*.ts","lint":"eslint src/**/*.ts","package":"ncc build --source-map --license licenses.txt","test":"jest","all":"npm run build && npm run format && npm run lint && npm run package && npm test"},"homepage":"https://github.com/gowee/sync-leetcode-activities-action","repository":{"type":"git","url":"git+https://github.com/actions/typescript-action.git"},"keywords":["actions","node","setup"],"author":"Gowee <whygowe@gmail.com>","license":"MIT","dependencies":{"@actions/core":"^1.2.6","@actions/exec":"^1.0.4","@actions/github":"^4.0.0","@actions/io":"^1.0.2","@types/node-fetch":"^2.5.7","node-fetch":"^2.6.1"},"devDependencies":{"@types/jest":"^26.0.10","@types/node":"^14.10.0","@typescript-eslint/eslint-plugin":"^4.5.0","@typescript-eslint/parser":"^4.5.0","@vercel/ncc":"^0.23.0","eslint":"^7.8.1","eslint-plugin-github":"^4.1.1","eslint-plugin-jest":"^23.20.0","jest":"^24.9.0","jest-circus":"^26.4.2","js-yaml":"^3.14.0","prettier":"2.1.1","ts-jest":"^24.3.0","typescript":"^4.0.2"}};
 
 /***/ }),
 
@@ -1190,8 +1185,7 @@ const path_1 = __importDefault(__webpack_require__(622));
 const core = __importStar(__webpack_require__(186));
 const io = __importStar(__webpack_require__(436));
 const exec_1 = __webpack_require__(514);
-const console_1 = __webpack_require__(82);
-// class GitController
+const assert_1 = __importDefault(__webpack_require__(357));
 class GitController {
     constructor(repoPath) {
         this.inited = false;
@@ -1201,7 +1195,7 @@ class GitController {
         return __awaiter(this, void 0, void 0, function* () {
             const controller = new GitController(repoPath);
             core.debug("Repo path: " + repoPath);
-            yield controller.prepare();
+            yield controller.prepare(allowingNotInited);
             return controller;
         });
     }
@@ -1227,7 +1221,7 @@ class GitController {
     }
     configUser(name, email) {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.gitPath);
+            assert_1.default(this.gitPath);
             if (name !== undefined) {
                 yield this.exec(["config", "user.name", name]);
             }
@@ -1238,14 +1232,14 @@ class GitController {
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.gitPath);
+            assert_1.default(this.gitPath);
             yield this.exec(["init"]);
         });
     }
     isTopLevel() {
         return __awaiter(this, void 0, void 0, function* () {
             const topLevel = yield this.getTopLevel();
-            console.log("Repo toplevel: " + path_1.default.resolve(topLevel));
+            core.debug("Repo toplevel: " + path_1.default.resolve(topLevel));
             return path_1.default.resolve(topLevel) === path_1.default.resolve(this.repoPath);
         });
     }
@@ -1257,7 +1251,7 @@ class GitController {
     }
     getLatestTimestamp(filters) {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.inited);
+            assert_1.default(this.inited);
             const filterArgs = [];
             if ((filters === null || filters === void 0 ? void 0 : filters.author) !== undefined) {
                 filterArgs.push("--author", `${filters.author}`);
@@ -1276,12 +1270,13 @@ class GitController {
                 const logArgs = ["log", "-1", "--format=%at"];
                 return new Date(parseInt((yield this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000);
             }
+            // TODO: use author or commit datetime?
         });
     }
     commit(message, allowingEmpty = false, env) {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.inited);
-            let args = ["commit", "-m", `${message}`];
+            assert_1.default(this.inited);
+            const args = ["commit", "-m", `${message}`];
             if (allowingEmpty) {
                 args.push("--allow-empty");
             }
@@ -1291,15 +1286,15 @@ class GitController {
     }
     push() {
         return __awaiter(this, void 0, void 0, function* () {
-            console_1.assert(this.inited);
+            assert_1.default(this.inited);
             yield this.exec(["push"]);
         });
     }
     exec(args, additionalEnv) {
         return __awaiter(this, void 0, void 0, function* () {
             // Ref: https://github.com/actions/checkout/blob/a81bbbf8298c0fa03ea29cdc473d45769f953675/src/git-command-manager.ts#L425
-            const env = Object.assign(Object.assign({}, process.env), additionalEnv);
-            let stdout = [];
+            const env = Object.assign(Object.assign({}, process.env), additionalEnv); // eslint-disable-line @typescript-eslint/no-explicit-any
+            const stdout = [];
             const options = {
                 cwd: this.repoPath,
                 env,
@@ -1311,7 +1306,7 @@ class GitController {
             };
             // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
             const exitCode = yield exec_1.exec(`"${this.gitPath}"`, args, options);
-            console_1.assert(exitCode === 0);
+            assert_1.default(exitCode === 0);
             core.debug("stdout: " + stdout);
             return stdout.join("");
         });
