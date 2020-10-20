@@ -1,6 +1,6 @@
 {
   "name": "sync-contrib-calendar-action",
-  "version": "0.0.0",
+  "version": "0.0.1-alpha",
   "private": true,
   "description": "A GitHub action that helps populate the contribution graph with activies from other sources",
   "main": "lib/main.js",
