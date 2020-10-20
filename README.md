@@ -1,103 +1,39 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+[![Build and Test](https://github.com/Gowee/some-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/some-action/actions)
 
-# Create a JavaScript Action using TypeScript
+# Sync Contrib Calendar Action
+(WIP) A GitHub action that helps synchronize activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
+*Only LeetCode is supported currently.*
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+## What it actually does?
+For every contribution/activity on other platforms, it accordingly creates an emtpy commit to light (or deepen the color of) a little square on the contribution graph.
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+## Setup
+To setup this action, create a new empty repository and activate the action by applying the following <abbr title="Minimum Viable Product">MVP</abbr> workflow (e.g. into `.github/workflows/sync-leetcode.yml`). After that, manually trigger the workflow in the Action tab. 
+<!-- For a complete workflow example, refers to examples/sync-leetcode.yml -->
 
-## Create an action from this template
+```yml
+on: 
+  workflow_dispatch
 
-Click the `Use this Template` and provide the new repo details for your action
-
-## Code in Main
-
-Install the dependencies  
-```bash
-$ npm install
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: gowee/some-action@2cc205224a3da4c21309b81a05cd27f25a187bfd
+      with:
+        leetcode_username: <USERNAME>
 ```
 
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run package
-```
+## Notes
+### Security
+The action has access to the the [GitHub token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) provided automatically by the GitHub Action runtime, so that to push commits without requiring manual configuration.
+Outgoing requests are made only to fetch actitivies from data sources such as GitLab.
+But be reminded that the software is provided as-is, with NO WARRANTY. 
 
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
-
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
-```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Note: We recommend using the `--license` option for ncc, which will create a license file for all of the production node modules used in your project.
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
-
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
-
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
+### Caveat
+The action is still under heavy development and have all its functions unstable with few test cases, which, in the worst cases, may result in tons of repeated commits unexpectedly.
+It is strongly recommended to create a new repository for the action to work separately.
