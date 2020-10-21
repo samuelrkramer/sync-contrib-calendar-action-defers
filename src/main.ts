@@ -1,8 +1,9 @@
+import assert from "assert"
+
 import * as core from "@actions/core"
 
 import { getUserProfile } from "./lcapi"
 import { GitController } from "./git"
-import assert from "assert"
 import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
 
 async function run(): Promise<void> {

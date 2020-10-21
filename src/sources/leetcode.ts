@@ -1,18 +1,20 @@
 import fetch from "node-fetch"
 
-import { USER_AGENT } from "./common"
+import * as core from "@actions/core"
+
+import { USER_AGENT } from "../common"
 
 // Generated with https://jvilk.com/MakeTypes/ based on response of LeetCode API
-export interface UserProfileQueryResult {
+interface UserProfileQueryResult {
   allQuestionsCount?: AllQuestionsCountEntity[] | null
   matchedUser: MatchedUser
 }
-export interface AllQuestionsCountEntity {
+interface AllQuestionsCountEntity {
   difficulty: string
   count: number
   //__typename: string;
 }
-export interface MatchedUser {
+interface MatchedUser {
   username: string
   socialAccounts?: string[] | null
   githubUrl?: string | null
@@ -22,13 +24,13 @@ export interface MatchedUser {
   submitStats: SubmitStats
   //__typename: string;
 }
-export interface Contributions {
+interface Contributions {
   points: number
   questionCount: number
   testcaseCount: number
   //__typename: string;
 }
-export interface Profile {
+interface Profile {
   realName: string
   websites?: null[] | null
   countryName?: null
@@ -42,19 +44,19 @@ export interface Profile {
   ranking: number
   //__typename: string;
 }
-export interface SubmitStats {
+interface SubmitStats {
   acSubmissionNum?: AcSubmissionNumEntityOrTotalSubmissionNumEntity[] | null
   totalSubmissionNum?: AcSubmissionNumEntityOrTotalSubmissionNumEntity[] | null
   //__typename: string;
 }
-export interface AcSubmissionNumEntityOrTotalSubmissionNumEntity {
+interface AcSubmissionNumEntityOrTotalSubmissionNumEntity {
   difficulty: string
   count: number
   submissions: number
   //__typename: string;
 }
 
-export async function getUserProfile(username: string): Promise<UserProfileQueryResult> {
+async function getUserProfile(username: string): Promise<UserProfileQueryResult> {
   const payload = {
     operationName: "getUserProfile",
     variables: { username },
@@ -78,4 +80,25 @@ export async function getUserProfile(username: string): Promise<UserProfileQuery
   data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar)
 
   return data
+}
+
+export default async function getCalendar(username: string, lastSynced = new Date(-1)): Promise<Date[]> {
+  const userProfile = await getUserProfile(username)
+  const submissionCalendar = userProfile.matchedUser.submissionCalendar
+  const calendar = []
+  // Bisect won't work as the object keys is unordered.
+  for (const timestamp of Object.keys(submissionCalendar)) {
+    const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
+    for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+      // A little trick to distinguish activities between each other within one day
+      const offsetDate = new Date(date.getTime() + i)
+      if (offsetDate > lastSynced) {
+        // TODO: will it lose some new activities added in a day later?
+        calendar.push(offsetDate)
+      }
+    }
+  }
+  core.debug(`Total days: ${Object.keys(submissionCalendar).length}`)
+  core.debug(`New activities: ${calendar.length}`)
+  return calendar
 }

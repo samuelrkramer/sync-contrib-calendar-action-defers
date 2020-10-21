@@ -1,7 +1,7 @@
 [![Build and Test](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
 
 # Sync Contrib Calendar Action
-(WIP) A GitHub action that helps synchronize activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
+(WIP) A :octocat:GitHub 🔀action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
 
 *Only LeetCode is supported currently.*
 
