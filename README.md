@@ -1,4 +1,4 @@
-[![Build and Test](https://github.com/Gowee/sync-contrib-calendar/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar/actions)
+[![Build and Test](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
 
 # Sync Contrib Calendar Action
 (WIP) A GitHub action that helps synchronize activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - uses: gowee/sync-contrib-calendar@v0.0.1-alpha
+    - uses: gowee/sync-contrib-calendar-action@v0.0.1-alpha
       with:
         leetcode_username: <USERNAME>
 ```
