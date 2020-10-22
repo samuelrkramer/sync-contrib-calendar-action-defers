@@ -1,4 +1,5 @@
 import assert from "assert"
+import fetch from "node-fetch"
 import * as core from "@actions/core"
 
 import { JSON_REQUEST_HEADERS } from "../common"

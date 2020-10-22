@@ -1,5 +1,4 @@
 // import assert from "assert"
-
 import fetch from "node-fetch"
 import * as core from "@actions/core"
 
