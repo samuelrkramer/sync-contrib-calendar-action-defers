@@ -2,18 +2,26 @@ import * as process from "process"
 import * as cp from "child_process"
 import * as path from "path"
 import fs from "fs"
-import { assert } from "console"
+import assert from "assert"
 
 // shows how the runner will run a javascript action with env / stdout protocol
-test("test runs", async () => {
+test("test runs", () => {
   const tempRepoPath = path.join(__dirname, "..", "__tests__", "__temprepo__")
   const tempRemotePath = path.join(__dirname, "..", "__tests__", "__tempremote__")
   fs.mkdirSync(tempRepoPath)
   fs.mkdirSync(tempRemotePath)
-  cp.execSync(`git init --bare`, { cwd: tempRemotePath })
-  cp.execSync(`git init`, { cwd: tempRepoPath })
-  cp.execSync(`git config user.name Test`, { cwd: tempRepoPath })
-  cp.execSync(`git config user.email test@localhost`, { cwd: tempRepoPath })
+  cp.execSync(`git init --bare`, {
+    cwd: tempRemotePath,
+  })
+  cp.execSync(`git init`, {
+    cwd: tempRepoPath,
+  })
+  cp.execSync(`git config user.name Test`, {
+    cwd: tempRepoPath,
+  })
+  cp.execSync(`git config user.email test@localhost`, {
+    cwd: tempRepoPath,
+  })
   cp.execSync(`git commit -m "Init" --allow-empty`, {
     cwd: tempRepoPath,
     // env: {
@@ -27,19 +35,25 @@ test("test runs", async () => {
   cp.execSync(`git push -u dummy master`, { cwd: tempRepoPath })
 
   try {
-    if (!process.env.hasOwnProperty("INPUT_LEETCODE_USERNAME")) {
+    process.env["INPUT_SOURCE"] = "leetcode"
+    if (!process.env.hasOwnProperty("INPUT_USERNAME")) {
       // allow overriding for local testing
-      process.env["INPUT_LEETCODE_USERNAME"] = "test"
+      process.env["INPUT_USERNAME"] = "test"
     }
-    process.env["INPUT_AUTHOR_NAME"] = "Someone"
-    process.env["INPUT_AUTHOR_EMAIL"] = "Someone@localhost"
+    process.env["INPUT_INSTANCE"] = "us"
+    process.env["INPUT_AUTHOR-NAME"] = "Someone"
+    process.env["INPUT_AUTHOR-EMAIL"] = "Someone@localhost"
     const ip = path.join(__dirname, "..", "lib", "main.js")
     const options: cp.ExecSyncOptions = {
       cwd: tempRepoPath,
       env: process.env,
-      stdio: "inherit",
+      // stdio: "inherit", // If the test gets stuck for long, then uncomment here
     }
-    cp.execSync(`node ${ip}`, options)
+    console.log(`stdout: ${cp.execSync(`node ${ip}`, options)}`)
+  } catch (e) {
+    console.log(`stdout: ${e.stdout}`)
+    console.log(`stderr: ${e.stderr}`)
+    throw e
   } finally {
     fs.rmdirSync(tempRepoPath, { recursive: true })
     fs.rmdirSync(tempRemotePath, { recursive: true })

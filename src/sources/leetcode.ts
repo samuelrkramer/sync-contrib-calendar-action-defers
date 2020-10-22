@@ -1,10 +1,15 @@
-import fetch from "node-fetch"
+import assert from "assert"
 
+import fetch from "node-fetch"
 import * as core from "@actions/core"
 
-import { USER_AGENT } from "../common"
+import { JSON_REQUEST_HEADERS } from "../common"
+import {BaseActivitySource, SourceType} from "./base"
 
-// Generated with https://jvilk.com/MakeTypes/ based on response of LeetCode API
+// Interface definitions are generated with
+// https://jvilk.com/MakeTypes/ based on response of LeetCode API.
+
+// The following interfaces and API endpoints are for leetcode.com only.
 interface UserProfileQueryResult {
   allQuestionsCount?: AllQuestionsCountEntity[] | null
   matchedUser: MatchedUser
@@ -65,12 +70,7 @@ async function getUserProfile(username: string): Promise<UserProfileQueryResult>
   }
 
   const response = await fetch("https://leetcode.com/graphql", {
-    headers: {
-      "User-Agent": USER_AGENT,
-      Accept: "application/json",
-      "content-type": "application/json",
-      "Cache-Control": "no-cache",
-    },
+    headers: JSON_REQUEST_HEADERS,
     // "referrer": "https://leetcode.com/",
     body: JSON.stringify(payload),
     method: "POST",
@@ -78,27 +78,68 @@ async function getUserProfile(username: string): Promise<UserProfileQueryResult>
 
   const data = (await response.json()).data
   data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar)
-
+  
+  // core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
   return data
 }
 
-export default async function getCalendar(username: string, lastSynced = new Date(-1)): Promise<Date[]> {
-  const userProfile = await getUserProfile(username)
-  const submissionCalendar = userProfile.matchedUser.submissionCalendar
-  const calendar = []
-  // Bisect won't work as the object keys is unordered.
-  for (const timestamp of Object.keys(submissionCalendar)) {
-    const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
-    for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-      // A little trick to distinguish activities between each other within one day
-      const offsetDate = new Date(date.getTime() + i)
-      if (offsetDate > lastSynced) {
-        // TODO: will it lose some new activities added in a day later?
-        calendar.push(offsetDate)
-      }
+
+// The following interfaces and API endpoints are for leetcode-cn.com only.
+interface UserSubmissionCalendarQueryResult {
+  [timestamp: string]: number;
+}
+
+async function getUserSubmissionCalendar(username: string): Promise<UserSubmissionCalendarQueryResult> {
+  const response = await fetch(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
+    "headers": JSON_REQUEST_HEADERS,
+    // "referrer": `https://leetcode-cn.com/u/${username}/`,
+    "method": "GET",
+  });
+  return await response.json();
+}
+
+export default class LeetCodeSource extends BaseActivitySource {
+  constructor(instance?: string) {
+    super(instance)
+
+    switch (instance) {
+      case "us":
+      case undefined:
+        this.getSubmissionCalendar = async (username) => {
+          const userProfile = await getUserProfile(username)
+          return userProfile.matchedUser.submissionCalendar
+        }
+        core.debug("LeetCode: leetcode.com")
+        break;
+      case "cn":
+        this.getSubmissionCalendar = getUserSubmissionCalendar
+        core.debug("LeetCode: leetcode-cn.com")
+        break;
+      default:
+        throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`)
     }
   }
-  core.debug(`Total days: ${Object.keys(submissionCalendar).length}`)
-  core.debug(`New activities: ${calendar.length}`)
-  return calendar
+
+  private getSubmissionCalendar: {(username: string): Promise<UserSubmissionCalendarQueryResult>}
+
+  async getCalendar(username: string, lastSynced = new Date(-1)): Promise<Date[]> {
+    // const userProfile = await getUserProfile(username)
+    const submissionCalendar = await this.getSubmissionCalendar(username)
+    const calendar = []
+    // Bisect won't work as the object keys is unordered.
+    for (const timestamp of Object.keys(submissionCalendar)) {
+      const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
+      for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+        // A little trick to distinguish activities between each other within one day
+        const offsetDate = new Date(date.getTime() + i)
+        if (offsetDate > lastSynced) {
+          // TODO: will it lose some new activities added in a day later?
+          calendar.push(offsetDate)
+        }
+      }
+    }
+    core.debug(`Total days in calendar: ${Object.keys(submissionCalendar).length}`)
+    core.debug(`New activities: ${calendar.length}`)
+    return calendar
+  }
 }

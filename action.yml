@@ -5,18 +5,21 @@ inputs:
   source:
     required: true
     description: "The source from where to grab the activities"
-  username: # change this
+  instance:
+    required: false
+    description: "The instance of the specified source"
+  username:
     required: true
     description: "The account username on the specified source"
   token:
     required: true
     description: "GitHub personal access token (PAT)"
     default: ${{ github.token }}
-  author_name:
+  author-name:
     required: true
     description: "The name of the author on behalf which the action commits"
     default: ${{ github.actor }}
-  author_email:
+  author-email:
     required: true
     description: "The email of the author on behalf which the action commits"
     default: "${{ github.actor }}@users.noreply.github.com"

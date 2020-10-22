@@ -1,32 +1,53 @@
-import { assert } from "console";
-import { USER_AGENT } from "../common";
+import assert from "assert";
+import * as core from "@actions/core"
+
+import { JSON_REQUEST_HEADERS } from "../common";
+import {BaseActivitySource, SourceType} from "./base";
+import { joinUrl } from "../utils";
 
 interface CalendarQueryResult {
-    [key: string]: number;
+  [key: string]: number;
 }
 
-export default async function getCalendar(username: string, lastSynced: Date): Promise<Date[]> {
-    const response = await fetch(`https://gitlab.com/users/${username}/calendar.json`, {
-        headers: {
-            "User-Agent": USER_AGENT,
-            Accept: "application/json",
-            "content-type": "application/json",
-            "Cache-Control": "no-cache",
-        }
+export default class GitLabSource extends BaseActivitySource {
+  private instanceUrl: string
+
+  constructor(instance?: string) {
+    super(instance);
+
+    if (instance) {
+      // TODO: canonicalize URL
+      this.instanceUrl = instance
+    }
+    else {
+      this.instanceUrl = "https://gitlab.com"
+    }
+    core.debug("Using GitLab instance: " + this.instanceUrl)
+  }
+
+  async getCalendar(username: string, lastSynced: Date): Promise<Date[]> {
+    const url = joinUrl(this.instanceUrl, `/users/${username}/calendar.json`)
+    core.debug("Calendar API URL: " + url)
+    const response = await fetch(url, {
+      headers: JSON_REQUEST_HEADERS
     })
 
     const raw: CalendarQueryResult = await response.json()
     const calendar = [];
     for (const yyyymmdd of Object.keys(raw)) {
-        const date = new Date(yyyymmdd)
-        assert(date.getTime() !== NaN)
-        for (let i = 0; i < raw[yyyymmdd]; i++) {
-            // A little trick to distinguish activities between each other within one day
-            const offsetDate = new Date(date.getTime() + i)
-            if (offsetDate > lastSynced) {
-                calendar.push(offsetDate)
-            }
+      const date = new Date(yyyymmdd)
+      assert(date.getTime() !== NaN)
+      for (let i = 0; i < raw[yyyymmdd]; i++) {
+        // A little trick to distinguish activities between each other within one day
+        const offsetDate = new Date(date.getTime() + i)
+        if (offsetDate > lastSynced) {
+          calendar.push(offsetDate)
         }
+      }
     }
+    core.debug(`Total days in calendar: ${Object.keys(raw).length}`)
+    core.debug(`New activities: ${calendar.length}`)
     return calendar;
+  }
 }
+

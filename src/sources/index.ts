@@ -1,18 +1,16 @@
-import getCalendarLeetCode from "./leetcode"
-import getCalendarGitLab from "./gitlab"
+import { IActivitySource, BaseActivitySource, SourceType, sourceTypes } from "./base"
+import LeetCodeSource from "./leetcode"
+import GitLabSource from "./gitlab"
 
-export interface GetCalendarFn {
-  (username: string, lastSynced: Date): Promise<Date[]>
-}
+export { IActivitySource, BaseActivitySource, SourceType, sourceTypes }
 
-export type Source = "leetcode" | "gitlab" | "wikipedia"
-
-export function getSource(source: Source): GetCalendarFn {
-  switch (source) {
+export function getSource(type: SourceType): IActivitySource {
+  switch (type) {
     case "leetcode":
-      return getCalendarLeetCode;
+      return LeetCodeSource;
     case "gitlab":
-    default:
-      return getCalendarGitLab
+      return GitLabSource
+    case "wikipedia":
+      throw new Error("Unimplemented")
   }
 }
