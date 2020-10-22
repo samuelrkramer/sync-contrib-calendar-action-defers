@@ -28,18 +28,19 @@ test("test runs", () => {
 
   try {
     process.env["INPUT_SOURCE"] = "leetcode"
+    process.env["INPUT_INSTANCE"] = "us"
     if (!process.env.hasOwnProperty("INPUT_USERNAME")) {
       // allow overriding for local testing
       process.env["INPUT_USERNAME"] = "test"
     }
-    process.env["INPUT_INSTANCE"] = "us"
     process.env["INPUT_AUTHOR-NAME"] = "Someone"
     process.env["INPUT_AUTHOR-EMAIL"] = "Someone@localhost"
     const ip = path.join(__dirname, "..", "lib", "main.js")
     const options: cp.ExecSyncOptions = {
       cwd: tempRepoPath,
       env: process.env,
-      // stdio: "inherit", // If the test gets stuck for long, then uncomment here
+      // If the test gets stuck for long, then uncomment here for real-time stdout/err output
+      // stdio: "inherit",
     }
     console.log(`stdout: ${cp.execSync(`node ${ip}`, options)}`)
   } catch (e) {

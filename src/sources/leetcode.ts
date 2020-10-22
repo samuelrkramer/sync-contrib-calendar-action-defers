@@ -83,18 +83,22 @@ async function getUserProfile(username: string): Promise<UserProfileQueryResult>
   return data
 }
 
-
 // The following interfaces and API endpoints are for leetcode-cn.com only.
 interface UserSubmissionCalendarQueryResult {
-  [timestamp: string]: number;
+  [timestamp: string]: number
 }
 
-async function getUserSubmissionCalendar(username: string): Promise<UserSubmissionCalendarQueryResult> {
-  const response = await fetch(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
-    "headers": JSON_REQUEST_HEADERS,
-    // "referrer": `https://leetcode-cn.com/u/${username}/`,
-    "method": "GET",
-  })
+async function getUserSubmissionCalendar(
+  username: string
+): Promise<UserSubmissionCalendarQueryResult> {
+  const response = await fetch(
+    `https://leetcode-cn.com/api/user_submission_calendar/${username}/`,
+    {
+      headers: JSON_REQUEST_HEADERS,
+      // "referrer": `https://leetcode-cn.com/u/${username}/`,
+      method: "GET",
+    }
+  )
   return await response.json()
 }
 
@@ -103,21 +107,21 @@ export default class LeetCodeSource extends BaseActivitySource {
     super(instance)
 
     switch (instance) {
-    case "us":
-    case "":
-    case undefined:
-      this.getSubmissionCalendar = async (username) => {
-        const userProfile = await getUserProfile(username)
-        return userProfile.matchedUser.submissionCalendar
-      }
-      core.debug("LeetCode: leetcode.com")
-      break
-    case "cn":
-      this.getSubmissionCalendar = getUserSubmissionCalendar
-      core.debug("LeetCode: leetcode-cn.com")
-      break
-    default:
-      throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`)
+      case "us":
+      case "":
+      case undefined:
+        this.getSubmissionCalendar = async (username) => {
+          const userProfile = await getUserProfile(username)
+          return userProfile.matchedUser.submissionCalendar
+        }
+        core.debug("LeetCode: leetcode.com")
+        break
+      case "cn":
+        this.getSubmissionCalendar = getUserSubmissionCalendar
+        core.debug("LeetCode: leetcode-cn.com")
+        break
+      default:
+        throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`)
     }
   }
 

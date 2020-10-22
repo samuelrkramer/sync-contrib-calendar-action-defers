@@ -3,11 +3,11 @@ import fetch from "node-fetch"
 import * as core from "@actions/core"
 
 import { JSON_REQUEST_HEADERS } from "../common"
-import {BaseActivitySource} from "./base"
+import { BaseActivitySource } from "./base"
 import { joinUrl } from "../utils"
 
 interface CalendarQueryResult {
-  [key: string]: number;
+  [key: string]: number
 }
 
 export default class GitLabSource extends BaseActivitySource {
@@ -19,8 +19,7 @@ export default class GitLabSource extends BaseActivitySource {
     if (instance) {
       // TODO: canonicalize URL
       this.instanceUrl = instance
-    }
-    else {
+    } else {
       this.instanceUrl = "https://gitlab.com"
     }
     core.debug("Using GitLab instance: " + this.instanceUrl)
@@ -30,7 +29,7 @@ export default class GitLabSource extends BaseActivitySource {
     const url = joinUrl(this.instanceUrl, `/users/${username}/calendar.json`)
     core.debug("Calendar API URL: " + url)
     const response = await fetch(url, {
-      headers: JSON_REQUEST_HEADERS
+      headers: JSON_REQUEST_HEADERS,
     })
 
     const raw: CalendarQueryResult = await response.json()

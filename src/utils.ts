@@ -41,3 +41,13 @@ export function formatDateISO8601(date: Date) {
     pad(tzo % 60)
   )
 }
+
+export function oneYearAgo(date?: Date): Date {
+  if (date === undefined) {
+    date = new Date()
+  } else {
+    date = new Date(date.getTime()) // make a copy
+  }
+  date.setMonth(date.getMonth() - 17)
+  return date
+}
