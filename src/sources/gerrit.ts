@@ -88,7 +88,7 @@ export default class GerritSource extends BaseActivitySource {
         `Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`
       )
     } while (
-      changes.length > 0 &&
+      partialChanges.length > 0 &&
       partialChanges[partialChanges.length - 1]._more_changes === true &&
       new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound
     )
@@ -116,6 +116,7 @@ export default class GerritSource extends BaseActivitySource {
     core.debug(
       `Querying changes for ${JSON.stringify(owner)} (quoted as: ${encodeURIComponent(owner)})`
     )
+    // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
     let pathQuery = `changes/?q=owner:${encodeURIComponent(
       owner
     )}&o=DETAILED_ACCOUNTS&start=${start}`
