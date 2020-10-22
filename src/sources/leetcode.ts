@@ -1,10 +1,11 @@
-import assert from "assert"
+// import assert from "assert"
 
 import fetch from "node-fetch"
 import * as core from "@actions/core"
 
 import { JSON_REQUEST_HEADERS } from "../common"
-import {BaseActivitySource, SourceType} from "./base"
+import { BaseActivitySource } from "./base"
+import { assert } from "console"
 
 // Interface definitions are generated with
 // https://jvilk.com/MakeTypes/ based on response of LeetCode API.
@@ -78,7 +79,7 @@ async function getUserProfile(username: string): Promise<UserProfileQueryResult>
 
   const data = (await response.json()).data
   data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar)
-  
+
   // core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
   return data
 }
@@ -94,8 +95,8 @@ async function getUserSubmissionCalendar(username: string): Promise<UserSubmissi
     "headers": JSON_REQUEST_HEADERS,
     // "referrer": `https://leetcode-cn.com/u/${username}/`,
     "method": "GET",
-  });
-  return await response.json();
+  })
+  return await response.json()
 }
 
 export default class LeetCodeSource extends BaseActivitySource {
@@ -103,24 +104,25 @@ export default class LeetCodeSource extends BaseActivitySource {
     super(instance)
 
     switch (instance) {
-      case "us":
-      case undefined:
-        this.getSubmissionCalendar = async (username) => {
-          const userProfile = await getUserProfile(username)
-          return userProfile.matchedUser.submissionCalendar
-        }
-        core.debug("LeetCode: leetcode.com")
-        break;
-      case "cn":
-        this.getSubmissionCalendar = getUserSubmissionCalendar
-        core.debug("LeetCode: leetcode-cn.com")
-        break;
-      default:
-        throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`)
+    case "us":
+    case "":
+    case undefined:
+      this.getSubmissionCalendar = async (username) => {
+        const userProfile = await getUserProfile(username)
+        return userProfile.matchedUser.submissionCalendar
+      }
+      core.debug("LeetCode: leetcode.com")
+      break
+    case "cn":
+      this.getSubmissionCalendar = getUserSubmissionCalendar
+      core.debug("LeetCode: leetcode-cn.com")
+      break
+    default:
+      throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`)
     }
   }
 
-  private getSubmissionCalendar: {(username: string): Promise<UserSubmissionCalendarQueryResult>}
+  private getSubmissionCalendar: { (username: string): Promise<UserSubmissionCalendarQueryResult> }
 
   async getCalendar(username: string, lastSynced = new Date(-1)): Promise<Date[]> {
     // const userProfile = await getUserProfile(username)
@@ -129,6 +131,7 @@ export default class LeetCodeSource extends BaseActivitySource {
     // Bisect won't work as the object keys is unordered.
     for (const timestamp of Object.keys(submissionCalendar)) {
       const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
+      assert(!isNaN(date.getTime()))
       for (let i = 0; i < submissionCalendar[timestamp]; i++) {
         // A little trick to distinguish activities between each other within one day
         const offsetDate = new Date(date.getTime() + i)

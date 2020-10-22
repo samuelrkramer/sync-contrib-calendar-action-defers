@@ -1,9 +1,9 @@
-import assert from "assert";
+import assert from "assert"
 import * as core from "@actions/core"
 
-import { JSON_REQUEST_HEADERS } from "../common";
-import {BaseActivitySource, SourceType} from "./base";
-import { joinUrl } from "../utils";
+import { JSON_REQUEST_HEADERS } from "../common"
+import {BaseActivitySource} from "./base"
+import { joinUrl } from "../utils"
 
 interface CalendarQueryResult {
   [key: string]: number;
@@ -13,7 +13,7 @@ export default class GitLabSource extends BaseActivitySource {
   private instanceUrl: string
 
   constructor(instance?: string) {
-    super(instance);
+    super(instance)
 
     if (instance) {
       // TODO: canonicalize URL
@@ -33,10 +33,10 @@ export default class GitLabSource extends BaseActivitySource {
     })
 
     const raw: CalendarQueryResult = await response.json()
-    const calendar = [];
+    const calendar = []
     for (const yyyymmdd of Object.keys(raw)) {
       const date = new Date(yyyymmdd)
-      assert(date.getTime() !== NaN)
+      assert(!isNaN(date.getTime()))
       for (let i = 0; i < raw[yyyymmdd]; i++) {
         // A little trick to distinguish activities between each other within one day
         const offsetDate = new Date(date.getTime() + i)
@@ -47,7 +47,6 @@ export default class GitLabSource extends BaseActivitySource {
     }
     core.debug(`Total days in calendar: ${Object.keys(raw).length}`)
     core.debug(`New activities: ${calendar.length}`)
-    return calendar;
+    return calendar
   }
 }
-

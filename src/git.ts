@@ -130,7 +130,7 @@ export class GitController {
     // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
     const exitCode = await exec(`"${this.gitPath}"`, args, options)
     assert(exitCode === 0)
-    core.debug("stdout: " + stdout)
+    // core.debug("stdout: " + stdout)
     return stdout.join("")
   }
 }

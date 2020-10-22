@@ -34,6 +34,5 @@ export default function getOptionsFromInputs(): Options {
     authorName,
     authorEmail,
   }
-  core.debug(`Options:`)
   return options
 }

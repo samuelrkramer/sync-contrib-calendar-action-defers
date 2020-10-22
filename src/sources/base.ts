@@ -14,8 +14,8 @@ export abstract class BaseActivitySource {
   abstract getCalendar(username: string, lastSynced: Date): Promise<Date[]>;
 }
 
-type BaseActivitySourceClass = typeof BaseActivitySource;
-export interface IActivitySource extends BaseActivitySourceClass { }
+type BaseActivitySourceClass = typeof BaseActivitySource
+export interface IActivitySource extends BaseActivitySourceClass {} // eslint-disable-line @typescript-eslint/no-empty-interface
 
 // Ref: https://jijnasu.in/typescript-cannot-create-an-instance-of-an-abstract-class/
 // TODO: WTH??
