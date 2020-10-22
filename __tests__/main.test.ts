@@ -10,18 +10,10 @@ test("test runs", () => {
   const tempRemotePath = path.join(__dirname, "..", "__tests__", "__tempremote__")
   fs.mkdirSync(tempRepoPath)
   fs.mkdirSync(tempRemotePath)
-  cp.execSync(`git init --bare`, {
-    cwd: tempRemotePath,
-  })
-  cp.execSync(`git init`, {
-    cwd: tempRepoPath,
-  })
-  cp.execSync(`git config user.name Test`, {
-    cwd: tempRepoPath,
-  })
-  cp.execSync(`git config user.email test@localhost`, {
-    cwd: tempRepoPath,
-  })
+  cp.execSync(`git init --bare`, { cwd: tempRemotePath })
+  cp.execSync(`git init`, { cwd: tempRepoPath })
+  cp.execSync(`git config user.name Test`, { cwd: tempRepoPath })
+  cp.execSync(`git config user.email test@localhost`, { cwd: tempRepoPath })
   cp.execSync(`git commit -m "Init" --allow-empty`, {
     cwd: tempRepoPath,
     // env: {

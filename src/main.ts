@@ -5,7 +5,7 @@ import * as core from "@actions/core"
 import getOptionsFromInputs from "./options"
 import { GitController } from "./git"
 import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
-import { simpleSHA1 } from "./utils"
+import { formatDateISO8601, simpleSHA1 } from "./utils"
 
 async function run(): Promise<void> {
   try {
@@ -40,7 +40,7 @@ async function run(): Promise<void> {
 Source: ${source}\tSource ID:${sourceID}`,
           true,
           {
-            GIT_AUTHOR_DATE: date.toISOString(),
+            GIT_AUTHOR_DATE: formatDateISO8601(date),
             GIT_AUTHOR_NAME: authorName,
             GIT_AUTHOR_EMAIL: authorEmail,
             GIT_COMMITTER_NAME: COMMITTER_NAME,
