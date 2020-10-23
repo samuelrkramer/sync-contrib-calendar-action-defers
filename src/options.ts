@@ -18,7 +18,12 @@ export default function getOptionsFromInputs(): Options {
   const username = core.getInput("username")
   const authorName = core.getInput("author-name")
   const authorEmail = core.getInput("author-email")
-
+  console.log(process.env)
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith("INPUT_USERNAME")) {
+      console.log(`${key}=${JSON.stringify(process.env[key])}`)
+    }
+  }
   // The action runtime will return empty strings instead of undefined for unfilled fields.
   assert(sourceType)
   assert(username)
