@@ -1,5 +1,5 @@
-name: 'Sync Leetcode Activity Graph'
-description: 'Populate the GitHub contribution graph with activies from LeetCode submissions'
+name: 'Sync Contrib Calendar Action'
+description: 'Illuminate the GitHub contribution graph with activities from GitLab, LeetCode, MediaWiki, etc.'
 author: 'Hung-I Wang <whygowe@gmail.com>'
 inputs:
   source:
