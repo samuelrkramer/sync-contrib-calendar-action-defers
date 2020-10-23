@@ -13,12 +13,13 @@ export interface Options {
 }
 
 export default function getOptionsFromInputs(): Options {
-  const sourceType = core.getInput("source")
+  const sourceType = core.getInput("source").toLowerCase()
   const instance = core.getInput("instance")
   const username = core.getInput("username")
   const authorName = core.getInput("author-name")
   const authorEmail = core.getInput("author-email")
 
+  // The action runtime will return empty strings instead of undefined for unfilled fields.
   assert(sourceType)
   assert(username)
   assert(authorName)

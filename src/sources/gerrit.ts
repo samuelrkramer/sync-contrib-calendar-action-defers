@@ -93,7 +93,7 @@ export default class GerritSource extends BaseActivitySource {
       new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound
     )
     core.debug(`Last change created at ${changes[changes.length - 1].created}`)
-    core.debug(`First change of the last chunk created at ${changes[changes.length - 1].created}`)
+    core.debug(`First change of the last chunk created at ${partialChanges[0]?.created}`)
 
     const calendar = []
     for (const change of changes) {

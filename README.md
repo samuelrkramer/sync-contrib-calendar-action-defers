@@ -1,16 +1,13 @@
 [![Build and Test](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
 
 # Sync Contrib Calendar Action
-(WIP) A :octocat:GitHub 🔀action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
-
-*Only LeetCode is supported currently.*
+(WIP) A :octocat:🔀 GitHub action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
 
 ## What it actually does?
 For every contribution/activity on other platforms, it accordingly creates an emtpy commit to light (or deepen the color of) a little square on the contribution graph.
 
 ## Setup
-To setup this action, create a new empty repository and activate the action by applying the following <abbr title="Minimum Viable Product">MVP</abbr> workflow (e.g. into `.github/workflows/sync-leetcode.yml`). After that, manually trigger the workflow in the Action tab. 
-<!-- For a complete workflow example, refers to examples/sync-leetcode.yml -->
+Create a new empty repository and activate the action by applying the following <abbr title="Minimum Viable Product">MVP</abbr> workflow (e.g. into `.github/workflows/sync-leetcode.yml`). After that, manually trigger the workflow in the Action tab. 
 
 ```yml
 on: 
@@ -27,6 +24,8 @@ jobs:
       with:
         leetcode_username: <USERNAME>
 ```
+The above workflow is intentionally simplified. For a complete workflow that runs on schedule automatically, refers to [examples](https://github.com/Gowee/sync-contrib-calendar-action/tree/main/examples).
+
 
 ## Notes
 ### Security

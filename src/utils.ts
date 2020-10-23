@@ -1,4 +1,6 @@
+import assert from "assert"
 import crypto from "crypto"
+import { encode } from "punycode"
 
 export function simpleSHA1(text: string): string {
   return crypto.createHash("SHA1").update(text).digest("hex")
@@ -48,6 +50,46 @@ export function oneYearAgo(date?: Date): Date {
   } else {
     date = new Date(date.getTime()) // make a copy
   }
-  date.setMonth(date.getMonth() - 17)
+  date.setMonth(date.getMonth() - 12)
   return date
+}
+
+export function constructURLParamString(paramMap: {
+  [key: string]: string | number | boolean | undefined
+}): string {
+  let params = []
+  for (const name of Object.keys(paramMap)) {
+    const value = paramMap[name]
+    if (value !== undefined) {
+      params.push(`${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
+    }
+  }
+  return params.join("&")
+}
+
+const WIKIMEDIA_PROECTS = [
+  "wikipedia",
+  "Wiktionary",
+  "wikiquote",
+  "wikinews",
+  "wikisource",
+  "wikibook",
+  "wikiversity",
+  "wikivoyage",
+  "wikimedia",
+  "wikidata",
+] // , "wikispecies"
+
+export function isWikiMediaProject(fqdn: string): boolean {
+  const parts = fqdn.split(".")
+  try {
+    const top = parts.pop()
+    assert(top === "org")
+    const second = parts.pop()
+    assert(second !== undefined)
+    assert(WIKIMEDIA_PROECTS.indexOf(second as string) !== -1)
+  } catch (e) {
+    return false
+  }
+  return true
 }

@@ -2,8 +2,8 @@
 //   (username: string, lastSynced: Date): Promise<Date[]>
 // }
 
-export const sourceTypes = ["leetcode", "gitlab", "wikipedia", "gerrit"] // FIX
-export type SourceType = "leetcode" | "gitlab" | "wikipedia" | "gerrit"
+export const sourceTypes = ["leetcode", "gitlab", "mediawiki", "gerrit"] // FIX
+export type SourceType = "leetcode" | "gitlab" | "mediawiki" | "gerrit"
 
 export abstract class BaseActivitySource {
   constructor(instance?: string) {
