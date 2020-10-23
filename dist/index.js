@@ -49,6 +49,13 @@ require('./sourcemap-register.js');module.exports =
 /************************************************************************/
 /******/ ({
 
+/***/ 82:
+/***/ (function(module) {
+
+module.exports = require("console");
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
@@ -124,7 +131,7 @@ function run() {
                     yield git.commit(`Synced activities at ${date.toDateString()} from ${source.constructor.name}
 
 Source: ${source}\tSource ID:${sourceID}`, true, {
-                        GIT_AUTHOR_DATE: date.toISOString(),
+                        GIT_AUTHOR_DATE: utils_1.formatDateISO8601(date),
                         GIT_AUTHOR_NAME: authorName,
                         GIT_AUTHOR_EMAIL: authorEmail,
                         GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
@@ -778,10 +785,12 @@ class ExecState extends events.EventEmitter {
 // }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseActivitySource = exports.sourceTypes = void 0;
-exports.sourceTypes = ["leetcode", "gitlab", "wikipedia"]; // FIX
+exports.sourceTypes = ["leetcode", "gitlab", "mediawiki", "gerrit"]; // FIX
 class BaseActivitySource {
     constructor(instance) {
-        this.toString = () => { return `${this.constructor.name}(instance=${JSON.stringify(instance)})`; };
+        this.toString = () => {
+            return `${this.constructor.name}(instance=${JSON.stringify(instance)})`;
+        };
     }
 }
 exports.BaseActivitySource = BaseActivitySource;
@@ -1084,14 +1093,18 @@ Object.defineProperty(exports, "BaseActivitySource", { enumerable: true, get: fu
 Object.defineProperty(exports, "sourceTypes", { enumerable: true, get: function () { return base_1.sourceTypes; } });
 const leetcode_1 = __importDefault(__webpack_require__(616));
 const gitlab_1 = __importDefault(__webpack_require__(615));
+const gerrit_1 = __importDefault(__webpack_require__(801));
+const mediawiki_1 = __importDefault(__webpack_require__(557));
 function getSource(type) {
     switch (type) {
         case "leetcode":
             return leetcode_1.default;
         case "gitlab":
             return gitlab_1.default;
-        case "wikipedia":
-            throw new Error("Unimplemented");
+        case "mediawiki":
+            return mediawiki_1.default;
+        case "gerrit":
+            return gerrit_1.default;
     }
 }
 exports.getSource = getSource;
@@ -1217,11 +1230,12 @@ const assert_1 = __importDefault(__webpack_require__(357));
 const core = __importStar(__webpack_require__(186));
 const sources_1 = __webpack_require__(316);
 function getOptionsFromInputs() {
-    const sourceType = core.getInput("source");
+    const sourceType = core.getInput("source").toLowerCase();
     const instance = core.getInput("instance");
     const username = core.getInput("username");
     const authorName = core.getInput("author-name");
     const authorEmail = core.getInput("author-email");
+    // The action runtime will return empty strings instead of undefined for unfilled fields.
     assert_1.default(sourceType);
     assert_1.default(username);
     assert_1.default(authorName);
@@ -1235,7 +1249,6 @@ function getOptionsFromInputs() {
         authorName,
         authorEmail,
     };
-    core.debug(`Options:`);
     return options;
 }
 exports.default = getOptionsFromInputs;
@@ -1414,7 +1427,7 @@ class GitController {
             // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
             const exitCode = yield exec_1.exec(`"${this.gitPath}"`, args, options);
             assert_1.default(exitCode === 0);
-            core.debug("stdout: " + stdout);
+            // core.debug("stdout: " + stdout)
             return stdout.join("");
         });
     }
@@ -3443,6 +3456,140 @@ exports.exec = exec;
 
 /***/ }),
 
+/***/ 557:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const utils_1 = __webpack_require__(918);
+class MediaWikiSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        if (instance) {
+            // TODO: canonicalize URL
+            if (!instance.endsWith("/")) {
+                instance += "/";
+            }
+        }
+        else {
+            throw Error("The instance URL of WikiPedia is not specified");
+        }
+        if (utils_1.isWikiMediaProject(new URL(instance).hostname)) {
+            // eslint-disable-next-line quotes
+            core.warning('For most WikiMedia projects, the instance url should include a trailing "w/".');
+            //  or "wiki/."
+        }
+        this.instanceUrl = instance;
+        core.debug("Using WikiPedia instance: " + this.instanceUrl);
+    }
+    getCalendar(username, lastSynced) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+            // TODO: or instead allow to specify the maximum time range in inputs
+            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+            core.debug(`Effective time bound: ${oldBound}`);
+            const contribs = [];
+            let partialContribs;
+            let uccontinue = undefined;
+            do {
+                const result = yield this.queryUserContribs(username, oldBound.toISOString(), uccontinue);
+                partialContribs = (_a = result.query.usercontribs) !== null && _a !== void 0 ? _a : [];
+                contribs.push(...Array.from(partialContribs));
+                uccontinue = (_b = result === null || result === void 0 ? void 0 : result.continue) === null || _b === void 0 ? void 0 : _b.uccontinue;
+                core.debug(`Current chunk size: ${(_c = partialContribs === null || partialContribs === void 0 ? void 0 : partialContribs.length) !== null && _c !== void 0 ? _c : -1}, current cumulative size: ${contribs.length}, next uccontinue: ${uccontinue}`);
+                console.log(partialContribs);
+            } while (partialContribs &&
+                partialContribs.length > 0 &&
+                uccontinue &&
+                new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound);
+            if (contribs.length > 0) {
+                core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`);
+                core.debug(`First contrib of the last chunk is at ${partialContribs[0].timestamp}`);
+            }
+            else {
+                core.warning("No contributions from this user are found. Are the username and instance URL correct?");
+            }
+            const calendar = [];
+            for (const contrib of contribs) {
+                const date = new Date(contrib.timestamp);
+                if (date > oldBound) {
+                    calendar.push(date);
+                }
+            }
+            core.debug(`Total queryed contribs: ${contribs.length}`);
+            core.debug(`Effective new activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+    queryUserContribs(ucuser, ucend, uccontinue) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Querying contribs for ${JSON.stringify(ucuser)} (quoted as: ${encodeURIComponent(ucuser)})`);
+            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+            const params = {
+                action: "query",
+                list: "usercontribs",
+                ucuser,
+                ucend,
+                uccontinue,
+                uclimit: 500,
+                format: "json",
+            };
+            const url = utils_1.joinUrl(this.instanceUrl, `api.php?${utils_1.constructURLParamString(params)}`);
+            core.debug("UserContribs API URL: " + url);
+            const response = yield node_fetch_1.default(url, { headers: common_1.JSON_REQUEST_HEADERS });
+            const raw = yield response.json();
+            core.debug(`First-level keys of response: ${Object.keys(raw)}`);
+            if (Object.prototype.hasOwnProperty.call(raw, "error")) {
+                throw Error(`Error when querying usercontribs: ${(_a = raw.error) === null || _a === void 0 ? void 0 : _a.code}\n${(_b = raw.error) === null || _b === void 0 ? void 0 : _b.info}`);
+            }
+            return raw;
+        });
+    }
+}
+exports.default = MediaWikiSource;
+
+
+/***/ }),
+
 /***/ 605:
 /***/ (function(module) {
 
@@ -3495,6 +3642,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert_1 = __importDefault(__webpack_require__(357));
+const node_fetch_1 = __importDefault(__webpack_require__(467));
 const core = __importStar(__webpack_require__(186));
 const common_1 = __webpack_require__(979);
 const base_1 = __webpack_require__(175);
@@ -3515,14 +3663,14 @@ class GitLabSource extends base_1.BaseActivitySource {
         return __awaiter(this, void 0, void 0, function* () {
             const url = utils_1.joinUrl(this.instanceUrl, `/users/${username}/calendar.json`);
             core.debug("Calendar API URL: " + url);
-            const response = yield fetch(url, {
-                headers: common_1.JSON_REQUEST_HEADERS
+            const response = yield node_fetch_1.default(url, {
+                headers: common_1.JSON_REQUEST_HEADERS,
             });
             const raw = yield response.json();
             const calendar = [];
             for (const yyyymmdd of Object.keys(raw)) {
                 const date = new Date(yyyymmdd);
-                assert_1.default(date.getTime() !== NaN);
+                assert_1.default(!isNaN(date.getTime()));
                 for (let i = 0; i < raw[yyyymmdd]; i++) {
                     // A little trick to distinguish activities between each other within one day
                     const offsetDate = new Date(date.getTime() + i);
@@ -3579,10 +3727,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
 const node_fetch_1 = __importDefault(__webpack_require__(467));
 const core = __importStar(__webpack_require__(186));
 const common_1 = __webpack_require__(979);
 const base_1 = __webpack_require__(175);
+const console_1 = __webpack_require__(82);
 function getUserProfile(username) {
     return __awaiter(this, void 0, void 0, function* () {
         const payload = {
@@ -3605,9 +3755,9 @@ function getUserProfile(username) {
 function getUserSubmissionCalendar(username) {
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield node_fetch_1.default(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
-            "headers": common_1.JSON_REQUEST_HEADERS,
+            headers: common_1.JSON_REQUEST_HEADERS,
             // "referrer": `https://leetcode-cn.com/u/${username}/`,
-            "method": "GET",
+            method: "GET",
         });
         return yield response.json();
     });
@@ -3617,6 +3767,7 @@ class LeetCodeSource extends base_1.BaseActivitySource {
         super(instance);
         switch (instance) {
             case "us":
+            case "":
             case undefined:
                 this.getSubmissionCalendar = (username) => __awaiter(this, void 0, void 0, function* () {
                     const userProfile = yield getUserProfile(username);
@@ -3640,6 +3791,7 @@ class LeetCodeSource extends base_1.BaseActivitySource {
             // Bisect won't work as the object keys is unordered.
             for (const timestamp of Object.keys(submissionCalendar)) {
                 const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
+                console_1.assert(!isNaN(date.getTime()));
                 for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                     // A little trick to distinguish activities between each other within one day
                     const offsetDate = new Date(date.getTime() + i);
@@ -3724,6 +3876,124 @@ module.exports = require("zlib");
 
 /***/ }),
 
+/***/ 801:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const utils_1 = __webpack_require__(918);
+class GerritSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        if (instance) {
+            // TODO: canonicalize URL
+            if (!instance.endsWith("/")) {
+                instance += "/";
+            }
+            this.instanceUrl = instance;
+        }
+        else {
+            throw Error("The instance URL of Gerrit is not specified");
+        }
+        core.debug("Using Gerrit instance: " + this.instanceUrl);
+    }
+    getCalendar(username, lastSynced) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+            // TODO: or instead allow to specify the maximum time range in inputs
+            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+            let offset = 0;
+            const changes = [];
+            let partialChanges;
+            do {
+                partialChanges = yield this.queryChanges(username, offset);
+                changes.push(...partialChanges);
+                offset += partialChanges.length;
+                core.debug(`Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`);
+            } while (partialChanges.length > 0 &&
+                partialChanges[partialChanges.length - 1]._more_changes === true &&
+                new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound);
+            core.debug(`Last change created at ${changes[changes.length - 1].created}`);
+            core.debug(`First change of the last chunk created at ${(_a = partialChanges[0]) === null || _a === void 0 ? void 0 : _a.created}`);
+            const calendar = [];
+            for (const change of changes) {
+                const date = new Date(`${change.created} UTC`);
+                if (date > oldBound) {
+                    calendar.push(date);
+                }
+            }
+            core.debug(`Total changes in queryed calendar: ${changes.length}`);
+            core.debug(`Effective new activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+    queryChanges(owner, start = 0, limit, noLimit = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Querying changes for ${JSON.stringify(owner)} (quoted as: ${encodeURIComponent(owner)})`);
+            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+            let pathQuery = `changes/?q=owner:${encodeURIComponent(owner)}&o=DETAILED_ACCOUNTS&start=${start}`;
+            if (limit !== undefined) {
+                pathQuery += `&limit=${limit}`;
+            }
+            if (noLimit) {
+                pathQuery += "&no-limit";
+            }
+            core.debug(`Path query: ${pathQuery}`);
+            const url = utils_1.joinUrl(this.instanceUrl, pathQuery);
+            core.debug("Calendar API URL: " + url);
+            // Note: with core.debug, the % will be quoted again upon printing!
+            const response = yield node_fetch_1.default(url, {
+                headers: common_1.JSON_REQUEST_HEADERS,
+            });
+            const raw = yield response.text();
+            core.debug(`Raw response (first 50 of ${raw.length}): ${raw.slice(0, 50)}`);
+            return JSON.parse(raw.slice(5));
+        });
+    }
+}
+exports.default = GerritSource;
+
+
+/***/ }),
+
 /***/ 835:
 /***/ (function(module) {
 
@@ -3748,7 +4018,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.joinUrl = exports.simpleSHA1 = void 0;
+exports.isWikiMediaProject = exports.constructURLParamString = exports.oneYearAgo = exports.formatDateISO8601 = exports.joinUrl = exports.simpleSHA1 = void 0;
+const assert_1 = __importDefault(__webpack_require__(357));
 const crypto_1 = __importDefault(__webpack_require__(417));
 function simpleSHA1(text) {
     return crypto_1.default.createHash("SHA1").update(text).digest("hex");
@@ -3758,6 +4029,86 @@ function joinUrl(base, url) {
     return new URL(url, base).toString();
 }
 exports.joinUrl = joinUrl;
+/**
+ * Format Date into ISO8601 string with timezone set
+ */
+function formatDateISO8601(date) {
+    // Adapted from https://stackoverflow.com/a/17415677/5488616
+    function pad(num) {
+        const norm = Math.floor(Math.abs(num));
+        return (norm < 10 ? "0" : "") + norm;
+    }
+    const tzo = -date.getTimezoneOffset();
+    if (tzo === 0) {
+        return date.toISOString();
+    }
+    const dif = tzo > 0 ? "+" : "-";
+    return (date.getFullYear() +
+        "-" +
+        pad(date.getMonth() + 1) +
+        "-" +
+        pad(date.getDate()) +
+        "T" +
+        pad(date.getHours()) +
+        ":" +
+        pad(date.getMinutes()) +
+        ":" +
+        pad(date.getSeconds()) +
+        dif +
+        pad(tzo / 60) +
+        ":" +
+        pad(tzo % 60));
+}
+exports.formatDateISO8601 = formatDateISO8601;
+function oneYearAgo(date) {
+    if (date === undefined) {
+        date = new Date();
+    }
+    else {
+        date = new Date(date.getTime()); // make a copy
+    }
+    date.setMonth(date.getMonth() - 12);
+    return date;
+}
+exports.oneYearAgo = oneYearAgo;
+function constructURLParamString(paramMap) {
+    let params = [];
+    for (const name of Object.keys(paramMap)) {
+        const value = paramMap[name];
+        if (value !== undefined) {
+            params.push(`${encodeURIComponent(name)}=${encodeURIComponent(value)}`);
+        }
+    }
+    return params.join("&");
+}
+exports.constructURLParamString = constructURLParamString;
+const WIKIMEDIA_PROECTS = [
+    "wikipedia",
+    "Wiktionary",
+    "wikiquote",
+    "wikinews",
+    "wikisource",
+    "wikibook",
+    "wikiversity",
+    "wikivoyage",
+    "wikimedia",
+    "wikidata",
+]; // , "wikispecies"
+function isWikiMediaProject(fqdn) {
+    const parts = fqdn.split(".");
+    try {
+        const top = parts.pop();
+        assert_1.default(top === "org");
+        const second = parts.pop();
+        assert_1.default(second !== undefined);
+        assert_1.default(WIKIMEDIA_PROECTS.indexOf(second) !== -1);
+    }
+    catch (e) {
+        return false;
+    }
+    return true;
+}
+exports.isWikiMediaProject = isWikiMediaProject;
 
 
 /***/ }),
