@@ -1235,6 +1235,12 @@ function getOptionsFromInputs() {
     const username = core.getInput("username");
     const authorName = core.getInput("author-name");
     const authorEmail = core.getInput("author-email");
+    console.log(process.env);
+    for (const key of Object.keys(process.env)) {
+        if (key.startsWith("INPUT_USERNAME")) {
+            console.log(`${key}=${JSON.stringify(process.env[key])}`);
+        }
+    }
     // The action runtime will return empty strings instead of undefined for unfilled fields.
     assert_1.default(sourceType);
     assert_1.default(username);
@@ -3509,7 +3515,7 @@ class MediaWikiSource extends base_1.BaseActivitySource {
             }
         }
         else {
-            throw Error("The instance URL of WikiPedia is not specified");
+            throw Error("The instance URL of MediaWiki is not specified");
         }
         if (utils_1.isWikiMediaProject(new URL(instance).hostname)) {
             // eslint-disable-next-line quotes
