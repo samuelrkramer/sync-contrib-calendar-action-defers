@@ -43,7 +43,7 @@ export default class MediaWikiSource extends BaseActivitySource {
         instance += "/"
       }
     } else {
-      throw Error("The instance URL of WikiPedia is not specified")
+      throw Error("The instance URL of MediaWiki is not specified")
     }
 
     if (isWikiMediaProject(new URL(instance).hostname)) {
