@@ -46,7 +46,7 @@ test("test runs", () => {
     // DO NOT use execSync that spawns a shell at first. Some Debain-based distros have dash as
     // the default shell which silently ignores passed-in environment variables with dashes (-) in
     // variable names.
-    console.log(`stdout: ${cp.execSync("node ip", options)}`)
+    console.log(`stdout: ${cp.execSync(`node ${ip}`, options)}`)
   } catch (e) {
     console.log(`stdout: ${e.stdout}`)
     console.log(`stderr: ${e.stderr}`)
