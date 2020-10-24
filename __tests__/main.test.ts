@@ -36,13 +36,16 @@ test("test runs", () => {
     process.env["INPUT_AUTHOR-NAME"] = "Someone"
     process.env["INPUT_AUTHOR-EMAIL"] = "Someone@localhost"
     const ip = path.join(__dirname, "..", "lib", "main.js")
-    const options: cp.ExecSyncOptions = {
+    const options: cp.ExecFileSyncOptions = {
       cwd: tempRepoPath,
       env: process.env,
       // If the test gets stuck for long, then uncomment here for real-time stdout/err output
       // stdio: "inherit",
     }
-    console.log(`stdout: ${cp.execSync(`node ${ip}`, options)}`)
+    // DO NOT use execSync that spawns a shell at first. Some Debain-based distros have dash as
+    // the default shell which silently ignores passed-in environment variables with dashes (-) in
+    // variable names.
+    console.log(`stdout: ${cp.execFileSync("node", [ip], options)}`)
   } catch (e) {
     console.log(`stdout: ${e.stdout}`)
     console.log(`stderr: ${e.stderr}`)
