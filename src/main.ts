@@ -19,11 +19,12 @@ async function run(): Promise<void> {
 
     const git = await GitController.createAsync(process.cwd())
 
-    const lastSynced = await git.getLatestTimestamp({
+    const lastSynced = await git.getLastCommitDate({
       message: sourceID,
       committer: COMMITTER_NAME,
     })
     const calendar = await source.getCalendar(username, lastSynced)
+    calendar.sort() // See git.ts:getLastCommitDate for more notes.
     core.info(`Last synced: ${lastSynced}`)
     if (lastSynced < new Date(0)) {
       core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
