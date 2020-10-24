@@ -39,7 +39,7 @@ export default class GitLabSource extends BaseActivitySource {
       assert(!isNaN(date.getTime()))
       for (let i = 0; i < raw[yyyymmdd]; i++) {
         // A little trick to distinguish activities between each other within one day
-        const offsetDate = new Date(date.getTime() + i)
+        const offsetDate = new Date(date.getTime() + i * 1000)
         if (offsetDate > lastSynced) {
           calendar.push(offsetDate)
         }
