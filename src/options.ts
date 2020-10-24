@@ -20,7 +20,7 @@ export default function getOptionsFromInputs(): Options {
   const authorEmail = core.getInput("author-email")
   console.log(process.env)
   for (const key of Object.keys(process.env)) {
-    if (key.startsWith("INPUT_USERNAME")) {
+    if (key.startsWith("INPUT")) {
       console.log(`${key}=${JSON.stringify(process.env[key])}`)
     }
   }
