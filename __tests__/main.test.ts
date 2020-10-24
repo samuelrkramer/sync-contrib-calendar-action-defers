@@ -43,8 +43,8 @@ test("test runs", () => {
       // stdio: "inherit",
     }
     // DO NOT use execSync that spawns a shell at first. Some Debain-based distros have dash as
-    // the default shell which silently ignores passed-in environment variables with dashes (-) in
-    // variable names.
+    // the default non-interactive shell (usually located in /bin/sh) which silently ignores
+    // passed-in environment variables with dashes (-) in variable names.
     console.log(`stdout: ${cp.execFileSync("node", [ip], options)}`)
   } catch (e) {
     console.log(`stdout: ${e.stdout}`)
