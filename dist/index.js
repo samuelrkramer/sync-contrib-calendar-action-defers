@@ -49,6 +49,13 @@ require('./sourcemap-register.js');module.exports =
 /************************************************************************/
 /******/ ({
 
+/***/ 82:
+/***/ (function(module) {
+
+module.exports = require("console");
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
@@ -94,49 +101,45 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
-const lcapi_1 = __webpack_require__(910);
+const options_1 = __importDefault(__webpack_require__(353));
 const git_1 = __webpack_require__(374);
-const assert_1 = __importDefault(__webpack_require__(357));
 const common_1 = __webpack_require__(979);
+const utils_1 = __webpack_require__(918);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const username = core.getInput("leetcode_username");
-            const authorName = core.getInput("author_name");
-            const authorEmail = core.getInput("author_email");
-            assert_1.default(username);
-            assert_1.default(authorName);
-            assert_1.default(authorEmail);
-            core.info(`LeetCode username: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
-            const userProfile = yield lcapi_1.getUserProfile(username);
-            core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`);
+            const { source, username, authorName, authorEmail } = yield options_1.default();
+            // In commit messages to distinguish lastSynced.
+            // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
+            const sourceID = utils_1.simpleSHA1(`${source}`);
+            core.info(`Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
             const git = yield git_1.GitController.createAsync(process.cwd());
-            const lastCommitted = yield git.getLatestTimestamp({ committer: common_1.COMMITTER_NAME });
-            core.info(`Last synced: ${lastCommitted.toString()}`);
-            if (lastCommitted < new Date(0)) {
+            const lastSynced = yield git.getLatestTimestamp({
+                message: sourceID,
+                committer: common_1.COMMITTER_NAME,
+            });
+            const calendar = yield source.getCalendar(username, lastSynced);
+            core.info(`Last synced: ${lastSynced}`);
+            if (lastSynced < new Date(0)) {
                 core.warning("No previous commits by this action are found. Is this repo a shallow clone?");
             }
-            const submissionCalendar = userProfile.matchedUser.submissionCalendar;
-            let daysCommited = 0;
-            for (const timestamp of Object.keys(submissionCalendar)) {
-                // TODO: bisect?
-                const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
-                if (date > lastCommitted) {
-                    // TODO: will it lose some new activities added in a day later?
-                    // TODO: i-th commits in a day?
-                    daysCommited += 1;
-                    for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-                        yield git.commit(`Synced activities at ${date.toDateString()}`, true, {
-                            GIT_AUTHOR_DATE: date.toISOString(),
-                            GIT_AUTHOR_NAME: authorName,
-                            GIT_AUTHOR_EMAIL: authorEmail,
-                            GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
-                            GIT_COMMITTER_EMAIL: common_1.COMMITTER_EMAIL,
-                        });
-                    }
+            for (const date of calendar) {
+                // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
+                if (date > lastSynced) {
+                    // daysCommited += 1
+                    // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+                    yield git.commit(`Synced activities at ${date.toDateString()} from ${source.constructor.name}
+
+Source: ${source}\tSource ID:${sourceID}`, true, {
+                        GIT_AUTHOR_DATE: utils_1.formatDateISO8601(date),
+                        GIT_AUTHOR_NAME: authorName,
+                        GIT_AUTHOR_EMAIL: authorEmail,
+                        GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
+                        GIT_COMMITTER_EMAIL: common_1.COMMITTER_EMAIL,
+                    });
                 }
             }
-            core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`);
+            core.info(`Activities committed: ${calendar.length}`);
             yield git.push();
             core.info("Pushed");
             // core.setOutput("time", new Date().toTimeString())
@@ -154,7 +157,7 @@ run();
 /***/ 119:
 /***/ (function(module) {
 
-module.exports = {"name":"sync-contrib-calendar-action","version":"0.0.0","private":true,"description":"A GitHub action that helps populate the contribution graph with activies from other sources","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write **/*.ts","format-check":"prettier --check **/*.ts","lint":"eslint src/**/*.ts","package":"ncc build --source-map --license licenses.txt","test":"jest","all":"npm run build && npm run format && npm run lint && npm run package && npm test"},"homepage":"https://github.com/gowee/sync-leetcode-activities-action","repository":{"type":"git","url":"git+https://github.com/actions/typescript-action.git"},"keywords":["actions","node","setup"],"author":"Gowee <whygowe@gmail.com>","license":"MIT","dependencies":{"@actions/core":"^1.2.6","@actions/exec":"^1.0.4","@actions/github":"^4.0.0","@actions/io":"^1.0.2","@types/node-fetch":"^2.5.7","node-fetch":"^2.6.1"},"devDependencies":{"@types/jest":"^26.0.10","@types/node":"^14.10.0","@typescript-eslint/eslint-plugin":"^4.5.0","@typescript-eslint/parser":"^4.5.0","@vercel/ncc":"^0.23.0","eslint":"^7.8.1","eslint-plugin-github":"^4.1.1","eslint-plugin-jest":"^23.20.0","jest":"^24.9.0","jest-circus":"^26.4.2","js-yaml":"^3.14.0","prettier":"2.1.1","ts-jest":"^24.3.0","typescript":"^4.0.2"}};
+module.exports = {"name":"sync-contrib-calendar-action","version":"0.0.1-alpha","private":true,"description":"A GitHub action that helps populate the contribution graph with activies from other sources","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write **/*.ts","format-check":"prettier --check **/*.ts","lint":"eslint src/**/*.ts","package":"ncc build --source-map --license licenses.txt","test":"jest","all":"npm run build && npm run format && npm run lint && npm run package && npm test"},"homepage":"https://github.com/gowee/sync-contrib-calendar","repository":{"type":"git","url":"git+https://github.com/actions/typescript-action.git"},"keywords":["actions","node","setup"],"author":"Gowee <whygowe@gmail.com>","license":"MIT","dependencies":{"@actions/core":"^1.2.6","@actions/exec":"^1.0.4","@actions/github":"^4.0.0","@actions/io":"^1.0.2","@types/node-fetch":"^2.5.7","node-fetch":"^2.6.1"},"devDependencies":{"@types/jest":"^26.0.10","@types/node":"^14.10.0","@typescript-eslint/eslint-plugin":"^4.5.0","@typescript-eslint/parser":"^4.5.0","@vercel/ncc":"^0.23.0","eslint":"^7.8.1","eslint-plugin-github":"^4.1.1","eslint-plugin-jest":"^23.20.0","jest":"^24.9.0","jest-circus":"^26.4.2","js-yaml":"^3.14.0","prettier":"2.1.1","ts-jest":"^24.3.0","typescript":"^4.0.2"}};
 
 /***/ }),
 
@@ -772,6 +775,31 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
+/***/ 175:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+// interface GetCalendarFn {
+//   (username: string, lastSynced: Date): Promise<Date[]>
+// }
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BaseActivitySource = exports.sourceTypes = void 0;
+exports.sourceTypes = ["leetcode", "gitlab", "mediawiki", "gerrit"]; // FIX
+class BaseActivitySource {
+    constructor(instance) {
+        this.toString = () => {
+            return `${this.constructor.name}(instance=${JSON.stringify(instance)})`;
+        };
+    }
+}
+exports.BaseActivitySource = BaseActivitySource;
+// Ref: https://jijnasu.in/typescript-cannot-create-an-instance-of-an-abstract-class/
+// TODO: WTH??
+
+
+/***/ }),
+
 /***/ 186:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -1050,6 +1078,40 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
+/***/ 316:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSource = exports.sourceTypes = exports.BaseActivitySource = void 0;
+const base_1 = __webpack_require__(175);
+Object.defineProperty(exports, "BaseActivitySource", { enumerable: true, get: function () { return base_1.BaseActivitySource; } });
+Object.defineProperty(exports, "sourceTypes", { enumerable: true, get: function () { return base_1.sourceTypes; } });
+const leetcode_1 = __importDefault(__webpack_require__(616));
+const gitlab_1 = __importDefault(__webpack_require__(615));
+const gerrit_1 = __importDefault(__webpack_require__(801));
+const mediawiki_1 = __importDefault(__webpack_require__(557));
+function getSource(type) {
+    switch (type) {
+        case "leetcode":
+            return leetcode_1.default;
+        case "gitlab":
+            return gitlab_1.default;
+        case "mediawiki":
+            return mediawiki_1.default;
+        case "gerrit":
+            return gerrit_1.default;
+    }
+}
+exports.getSource = getSource;
+
+
+/***/ }),
+
 /***/ 351:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -1133,6 +1195,64 @@ function escapeProperty(s) {
         .replace(/,/g, '%2C');
 }
 //# sourceMappingURL=command.js.map
+
+/***/ }),
+
+/***/ 353:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const assert_1 = __importDefault(__webpack_require__(357));
+const core = __importStar(__webpack_require__(186));
+const sources_1 = __webpack_require__(316);
+function getOptionsFromInputs() {
+    const sourceType = core.getInput("source").toLowerCase();
+    const instance = core.getInput("instance");
+    const username = core.getInput("username");
+    const authorName = core.getInput("author-name");
+    const authorEmail = core.getInput("author-email");
+    // The action runtime will return empty strings instead of undefined for unfilled fields.
+    assert_1.default(sourceType);
+    assert_1.default(username);
+    assert_1.default(authorName);
+    assert_1.default(authorEmail);
+    assert_1.default(sources_1.sourceTypes.indexOf(sourceType) !== -1); // FIX: any
+    const sourceClass = sources_1.getSource(sourceType);
+    const source = new sourceClass(instance);
+    const options = {
+        source,
+        username,
+        authorName,
+        authorEmail,
+    };
+    return options;
+}
+exports.default = getOptionsFromInputs;
+
 
 /***/ }),
 
@@ -1307,7 +1427,7 @@ class GitController {
             // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
             const exitCode = yield exec_1.exec(`"${this.gitPath}"`, args, options);
             assert_1.default(exitCode === 0);
-            core.debug("stdout: " + stdout);
+            // core.debug("stdout: " + stdout)
             return stdout.join("");
         });
     }
@@ -1321,6 +1441,13 @@ exports.GitController = GitController;
 /***/ (function(module) {
 
 module.exports = require("stream");
+
+/***/ }),
+
+/***/ 417:
+/***/ (function(module) {
+
+module.exports = require("crypto");
 
 /***/ }),
 
@@ -3329,6 +3456,140 @@ exports.exec = exec;
 
 /***/ }),
 
+/***/ 557:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const utils_1 = __webpack_require__(918);
+class MediaWikiSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        if (instance) {
+            // TODO: canonicalize URL
+            if (!instance.endsWith("/")) {
+                instance += "/";
+            }
+        }
+        else {
+            throw Error("The instance URL of WikiPedia is not specified");
+        }
+        if (utils_1.isWikiMediaProject(new URL(instance).hostname)) {
+            // eslint-disable-next-line quotes
+            core.warning('For most WikiMedia projects, the instance url should include a trailing "w/".');
+            //  or "wiki/."
+        }
+        this.instanceUrl = instance;
+        core.debug("Using WikiPedia instance: " + this.instanceUrl);
+    }
+    getCalendar(username, lastSynced) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+            // TODO: or instead allow to specify the maximum time range in inputs
+            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+            core.debug(`Effective time bound: ${oldBound}`);
+            const contribs = [];
+            let partialContribs;
+            let uccontinue = undefined;
+            do {
+                const result = yield this.queryUserContribs(username, oldBound.toISOString(), uccontinue);
+                partialContribs = (_a = result.query.usercontribs) !== null && _a !== void 0 ? _a : [];
+                contribs.push(...Array.from(partialContribs));
+                uccontinue = (_b = result === null || result === void 0 ? void 0 : result.continue) === null || _b === void 0 ? void 0 : _b.uccontinue;
+                core.debug(`Current chunk size: ${(_c = partialContribs === null || partialContribs === void 0 ? void 0 : partialContribs.length) !== null && _c !== void 0 ? _c : -1}, current cumulative size: ${contribs.length}, next uccontinue: ${uccontinue}`);
+                console.log(partialContribs);
+            } while (partialContribs &&
+                partialContribs.length > 0 &&
+                uccontinue &&
+                new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound);
+            if (contribs.length > 0) {
+                core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`);
+                core.debug(`First contrib of the last chunk is at ${partialContribs[0].timestamp}`);
+            }
+            else {
+                core.warning("No contributions from this user are found. Are the username and instance URL correct?");
+            }
+            const calendar = [];
+            for (const contrib of contribs) {
+                const date = new Date(contrib.timestamp);
+                if (date > oldBound) {
+                    calendar.push(date);
+                }
+            }
+            core.debug(`Total queryed contribs: ${contribs.length}`);
+            core.debug(`Effective new activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+    queryUserContribs(ucuser, ucend, uccontinue) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Querying contribs for ${JSON.stringify(ucuser)} (quoted as: ${encodeURIComponent(ucuser)})`);
+            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+            const params = {
+                action: "query",
+                list: "usercontribs",
+                ucuser,
+                ucend,
+                uccontinue,
+                uclimit: 500,
+                format: "json",
+            };
+            const url = utils_1.joinUrl(this.instanceUrl, `api.php?${utils_1.constructURLParamString(params)}`);
+            core.debug("UserContribs API URL: " + url);
+            const response = yield node_fetch_1.default(url, { headers: common_1.JSON_REQUEST_HEADERS });
+            const raw = yield response.json();
+            core.debug(`First-level keys of response: ${Object.keys(raw)}`);
+            if (Object.prototype.hasOwnProperty.call(raw, "error")) {
+                throw Error(`Error when querying usercontribs: ${(_a = raw.error) === null || _a === void 0 ? void 0 : _a.code}\n${(_b = raw.error) === null || _b === void 0 ? void 0 : _b.info}`);
+            }
+            return raw;
+        });
+    }
+}
+exports.default = MediaWikiSource;
+
+
+/***/ }),
+
 /***/ 605:
 /***/ (function(module) {
 
@@ -3340,6 +3601,214 @@ module.exports = require("http");
 /***/ (function(module) {
 
 module.exports = require("events");
+
+/***/ }),
+
+/***/ 615:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const assert_1 = __importDefault(__webpack_require__(357));
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const utils_1 = __webpack_require__(918);
+class GitLabSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        if (instance) {
+            // TODO: canonicalize URL
+            this.instanceUrl = instance;
+        }
+        else {
+            this.instanceUrl = "https://gitlab.com";
+        }
+        core.debug("Using GitLab instance: " + this.instanceUrl);
+    }
+    getCalendar(username, lastSynced) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = utils_1.joinUrl(this.instanceUrl, `/users/${username}/calendar.json`);
+            core.debug("Calendar API URL: " + url);
+            const response = yield node_fetch_1.default(url, {
+                headers: common_1.JSON_REQUEST_HEADERS,
+            });
+            const raw = yield response.json();
+            const calendar = [];
+            for (const yyyymmdd of Object.keys(raw)) {
+                const date = new Date(yyyymmdd);
+                assert_1.default(!isNaN(date.getTime()));
+                for (let i = 0; i < raw[yyyymmdd]; i++) {
+                    // A little trick to distinguish activities between each other within one day
+                    const offsetDate = new Date(date.getTime() + i);
+                    if (offsetDate > lastSynced) {
+                        calendar.push(offsetDate);
+                    }
+                }
+            }
+            core.debug(`Total days in calendar: ${Object.keys(raw).length}`);
+            core.debug(`New activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+}
+exports.default = GitLabSource;
+
+
+/***/ }),
+
+/***/ 616:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const console_1 = __webpack_require__(82);
+function getUserProfile(username) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const payload = {
+            operationName: "getUserProfile",
+            variables: { username },
+            query: "query getUserProfile($username: String!) {\n  allQuestionsCount {\n    difficulty\n    count\n    __typename\n  }\n  matchedUser(username: $username) {\n    username\n    socialAccounts\n    githubUrl\n    contributions {\n      points\n      questionCount\n      testcaseCount\n      __typename\n    }\n    profile {\n      realName\n      websites\n      countryName\n      skillTags\n      company\n      school\n      starRating\n      aboutMe\n      userAvatar\n      reputation\n      ranking\n      __typename\n    }\n    submissionCalendar\n    submitStats {\n      acSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      totalSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
+        };
+        const response = yield node_fetch_1.default("https://leetcode.com/graphql", {
+            headers: common_1.JSON_REQUEST_HEADERS,
+            // "referrer": "https://leetcode.com/",
+            body: JSON.stringify(payload),
+            method: "POST",
+        });
+        const data = (yield response.json()).data;
+        data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar);
+        // core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
+        return data;
+    });
+}
+function getUserSubmissionCalendar(username) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield node_fetch_1.default(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
+            headers: common_1.JSON_REQUEST_HEADERS,
+            // "referrer": `https://leetcode-cn.com/u/${username}/`,
+            method: "GET",
+        });
+        return yield response.json();
+    });
+}
+class LeetCodeSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        switch (instance) {
+            case "us":
+            case "":
+            case undefined:
+                this.getSubmissionCalendar = (username) => __awaiter(this, void 0, void 0, function* () {
+                    const userProfile = yield getUserProfile(username);
+                    return userProfile.matchedUser.submissionCalendar;
+                });
+                core.debug("LeetCode: leetcode.com");
+                break;
+            case "cn":
+                this.getSubmissionCalendar = getUserSubmissionCalendar;
+                core.debug("LeetCode: leetcode-cn.com");
+                break;
+            default:
+                throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`);
+        }
+    }
+    getCalendar(username, lastSynced = new Date(-1)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // const userProfile = await getUserProfile(username)
+            const submissionCalendar = yield this.getSubmissionCalendar(username);
+            const calendar = [];
+            // Bisect won't work as the object keys is unordered.
+            for (const timestamp of Object.keys(submissionCalendar)) {
+                const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
+                console_1.assert(!isNaN(date.getTime()));
+                for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+                    // A little trick to distinguish activities between each other within one day
+                    const offsetDate = new Date(date.getTime() + i);
+                    if (offsetDate > lastSynced) {
+                        // TODO: will it lose some new activities added in a day later?
+                        calendar.push(offsetDate);
+                    }
+                }
+            }
+            core.debug(`Total days in calendar: ${Object.keys(submissionCalendar).length}`);
+            core.debug(`New activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+}
+exports.default = LeetCodeSource;
+
 
 /***/ }),
 
@@ -3407,6 +3876,124 @@ module.exports = require("zlib");
 
 /***/ }),
 
+/***/ 801:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// import assert from "assert"
+const node_fetch_1 = __importDefault(__webpack_require__(467));
+const core = __importStar(__webpack_require__(186));
+const common_1 = __webpack_require__(979);
+const base_1 = __webpack_require__(175);
+const utils_1 = __webpack_require__(918);
+class GerritSource extends base_1.BaseActivitySource {
+    constructor(instance) {
+        super(instance);
+        if (instance) {
+            // TODO: canonicalize URL
+            if (!instance.endsWith("/")) {
+                instance += "/";
+            }
+            this.instanceUrl = instance;
+        }
+        else {
+            throw Error("The instance URL of Gerrit is not specified");
+        }
+        core.debug("Using Gerrit instance: " + this.instanceUrl);
+    }
+    getCalendar(username, lastSynced) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+            // TODO: or instead allow to specify the maximum time range in inputs
+            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+            let offset = 0;
+            const changes = [];
+            let partialChanges;
+            do {
+                partialChanges = yield this.queryChanges(username, offset);
+                changes.push(...partialChanges);
+                offset += partialChanges.length;
+                core.debug(`Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`);
+            } while (partialChanges.length > 0 &&
+                partialChanges[partialChanges.length - 1]._more_changes === true &&
+                new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound);
+            core.debug(`Last change created at ${changes[changes.length - 1].created}`);
+            core.debug(`First change of the last chunk created at ${(_a = partialChanges[0]) === null || _a === void 0 ? void 0 : _a.created}`);
+            const calendar = [];
+            for (const change of changes) {
+                const date = new Date(`${change.created} UTC`);
+                if (date > oldBound) {
+                    calendar.push(date);
+                }
+            }
+            core.debug(`Total changes in queryed calendar: ${changes.length}`);
+            core.debug(`Effective new activities: ${calendar.length}`);
+            return calendar;
+        });
+    }
+    queryChanges(owner, start = 0, limit, noLimit = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Querying changes for ${JSON.stringify(owner)} (quoted as: ${encodeURIComponent(owner)})`);
+            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+            let pathQuery = `changes/?q=owner:${encodeURIComponent(owner)}&o=DETAILED_ACCOUNTS&start=${start}`;
+            if (limit !== undefined) {
+                pathQuery += `&limit=${limit}`;
+            }
+            if (noLimit) {
+                pathQuery += "&no-limit";
+            }
+            core.debug(`Path query: ${pathQuery}`);
+            const url = utils_1.joinUrl(this.instanceUrl, pathQuery);
+            core.debug("Calendar API URL: " + url);
+            // Note: with core.debug, the % will be quoted again upon printing!
+            const response = yield node_fetch_1.default(url, {
+                headers: common_1.JSON_REQUEST_HEADERS,
+            });
+            const raw = yield response.text();
+            core.debug(`Raw response (first 50 of ${raw.length}): ${raw.slice(0, 50)}`);
+            return JSON.parse(raw.slice(5));
+        });
+    }
+}
+exports.default = GerritSource;
+
+
+/***/ }),
+
 /***/ 835:
 /***/ (function(module) {
 
@@ -3422,51 +4009,106 @@ module.exports = eval("require")("encoding");
 
 /***/ }),
 
-/***/ 910:
+/***/ 918:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = void 0;
-const node_fetch_1 = __importDefault(__webpack_require__(467));
-const common_1 = __webpack_require__(979);
-function getUserProfile(username) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const payload = {
-            operationName: "getUserProfile",
-            variables: { username },
-            query: "query getUserProfile($username: String!) {\n  allQuestionsCount {\n    difficulty\n    count\n    __typename\n  }\n  matchedUser(username: $username) {\n    username\n    socialAccounts\n    githubUrl\n    contributions {\n      points\n      questionCount\n      testcaseCount\n      __typename\n    }\n    profile {\n      realName\n      websites\n      countryName\n      skillTags\n      company\n      school\n      starRating\n      aboutMe\n      userAvatar\n      reputation\n      ranking\n      __typename\n    }\n    submissionCalendar\n    submitStats {\n      acSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      totalSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
-        };
-        const response = yield node_fetch_1.default("https://leetcode.com/graphql", {
-            headers: {
-                "User-Agent": common_1.USER_AGENT,
-                Accept: "application/json",
-                "content-type": "application/json",
-                "Cache-Control": "no-cache",
-            },
-            // "referrer": "https://leetcode.com/",
-            body: JSON.stringify(payload),
-            method: "POST",
-        });
-        const data = (yield response.json()).data;
-        data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar);
-        return data;
-    });
+exports.isWikiMediaProject = exports.constructURLParamString = exports.oneYearAgo = exports.formatDateISO8601 = exports.joinUrl = exports.simpleSHA1 = void 0;
+const assert_1 = __importDefault(__webpack_require__(357));
+const crypto_1 = __importDefault(__webpack_require__(417));
+function simpleSHA1(text) {
+    return crypto_1.default.createHash("SHA1").update(text).digest("hex");
 }
-exports.getUserProfile = getUserProfile;
+exports.simpleSHA1 = simpleSHA1;
+function joinUrl(base, url) {
+    return new URL(url, base).toString();
+}
+exports.joinUrl = joinUrl;
+/**
+ * Format Date into ISO8601 string with timezone set
+ */
+function formatDateISO8601(date) {
+    // Adapted from https://stackoverflow.com/a/17415677/5488616
+    function pad(num) {
+        const norm = Math.floor(Math.abs(num));
+        return (norm < 10 ? "0" : "") + norm;
+    }
+    const tzo = -date.getTimezoneOffset();
+    if (tzo === 0) {
+        return date.toISOString();
+    }
+    const dif = tzo > 0 ? "+" : "-";
+    return (date.getFullYear() +
+        "-" +
+        pad(date.getMonth() + 1) +
+        "-" +
+        pad(date.getDate()) +
+        "T" +
+        pad(date.getHours()) +
+        ":" +
+        pad(date.getMinutes()) +
+        ":" +
+        pad(date.getSeconds()) +
+        dif +
+        pad(tzo / 60) +
+        ":" +
+        pad(tzo % 60));
+}
+exports.formatDateISO8601 = formatDateISO8601;
+function oneYearAgo(date) {
+    if (date === undefined) {
+        date = new Date();
+    }
+    else {
+        date = new Date(date.getTime()); // make a copy
+    }
+    date.setMonth(date.getMonth() - 12);
+    return date;
+}
+exports.oneYearAgo = oneYearAgo;
+function constructURLParamString(paramMap) {
+    let params = [];
+    for (const name of Object.keys(paramMap)) {
+        const value = paramMap[name];
+        if (value !== undefined) {
+            params.push(`${encodeURIComponent(name)}=${encodeURIComponent(value)}`);
+        }
+    }
+    return params.join("&");
+}
+exports.constructURLParamString = constructURLParamString;
+const WIKIMEDIA_PROECTS = [
+    "wikipedia",
+    "Wiktionary",
+    "wikiquote",
+    "wikinews",
+    "wikisource",
+    "wikibook",
+    "wikiversity",
+    "wikivoyage",
+    "wikimedia",
+    "wikidata",
+]; // , "wikispecies"
+function isWikiMediaProject(fqdn) {
+    const parts = fqdn.split(".");
+    try {
+        const top = parts.pop();
+        assert_1.default(top === "org");
+        const second = parts.pop();
+        assert_1.default(second !== undefined);
+        assert_1.default(WIKIMEDIA_PROECTS.indexOf(second) !== -1);
+    }
+    catch (e) {
+        return false;
+    }
+    return true;
+}
+exports.isWikiMediaProject = isWikiMediaProject;
 
 
 /***/ }),
@@ -3682,10 +4324,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.COMMITTER_EMAIL = exports.COMMITTER_NAME = exports.USER_AGENT = exports.PACKAGE_IDENTIFIER = void 0;
+exports.COMMITTER_EMAIL = exports.COMMITTER_NAME = exports.JSON_REQUEST_HEADERS = exports.USER_AGENT = exports.PACKAGE_IDENTIFIER = void 0;
 const package_json_1 = __importDefault(__webpack_require__(119));
 exports.PACKAGE_IDENTIFIER = `${package_json_1.default.name}/${package_json_1.default.NAME}`;
 exports.USER_AGENT = `${exports.PACKAGE_IDENTIFIER} (+${package_json_1.default.homepage})`;
+exports.JSON_REQUEST_HEADERS = {
+    "User-Agent": exports.USER_AGENT,
+    Accept: "application/json",
+    "content-type": "application/json",
+    "Cache-Control": "no-cache",
+};
 exports.COMMITTER_NAME = "SyncContribCalBot";
 exports.COMMITTER_EMAIL = "";
 

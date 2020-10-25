@@ -64,7 +64,7 @@ export class GitController {
     return raw.trim()
   }
 
-  async getLatestTimestamp(filters?: {
+  async getLastCommitDate(filters?: {
     author?: string
     committer?: string
     message?: string
@@ -85,10 +85,20 @@ export class GitController {
     if (parseInt((await this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
       return new Date(-1)
     } else {
-      const logArgs = ["log", "-1", "--format=%at"]
+      const logArgs = ["log", "-1", "--format=%ct"] // %ct for commit time, %at for author time
       return new Date(parseInt((await this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000)
     }
-    // TODO: use author or commit datetime?
+    // FOR being used as lastSyned:
+    //  If using COMMIT_DATE,
+    //   As most sources (e.g. GitLab) have no accurate dates other than day-by-day calendar, there
+    //   is no way to distinguish activities in one day from each other. A little trick is to add I
+    //   seconds to the date of the I-th activity in a day (e.g. gitlab.ts #L41). With COMMIT_DATE
+    //   used as lastSynced, newly added activities within a day after the run of the action in
+    //   that day would be ignored forever.
+    //  If using AUTHOR_DATE,
+    //   The calendar from sources SHOULD be sorted before committing as the raw data of some
+    //   sources are not in order. If they are not ordered, the action may repeatedly commits some
+    //   previously committed activities.
   }
 
   async commit(
@@ -130,7 +140,7 @@ export class GitController {
     // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
     const exitCode = await exec(`"${this.gitPath}"`, args, options)
     assert(exitCode === 0)
-    core.debug("stdout: " + stdout)
+    // core.debug("stdout: " + stdout)
     return stdout.join("")
   }
 }

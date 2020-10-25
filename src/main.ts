@@ -1,51 +1,56 @@
+import assert from "assert"
+
 import * as core from "@actions/core"
 
-import { getUserProfile } from "./lcapi"
+import getOptionsFromInputs from "./options"
 import { GitController } from "./git"
-import assert from "assert"
 import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
+import { formatDateISO8601, simpleSHA1 } from "./utils"
 
 async function run(): Promise<void> {
   try {
-    const username = core.getInput("leetcode_username")
-    const authorName = core.getInput("author_name")
-    const authorEmail = core.getInput("author_email")
-    assert(username)
-    assert(authorName)
-    assert(authorEmail)
-    core.info(`LeetCode username: ${username}\nCommit author: ${authorName} <${authorEmail}>`)
-
-    const userProfile = await getUserProfile(username)
-    core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
+    const { source, username, authorName, authorEmail } = await getOptionsFromInputs()
+    // In commit messages to distinguish lastSynced.
+    // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
+    const sourceID = simpleSHA1(`${source}`)
+    core.info(
+      `Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`
+    )
 
     const git = await GitController.createAsync(process.cwd())
 
-    const lastCommitted = await git.getLatestTimestamp({ committer: COMMITTER_NAME })
-    core.info(`Last synced: ${lastCommitted.toString()}`)
-    if (lastCommitted < new Date(0)) {
+    const lastSynced = await git.getLastCommitDate({
+      message: sourceID,
+      committer: COMMITTER_NAME,
+    })
+    const calendar = await source.getCalendar(username, lastSynced)
+    calendar.sort() // See git.ts:getLastCommitDate for more notes.
+    core.info(`Last synced: ${lastSynced}`)
+    if (lastSynced < new Date(0)) {
       core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
     }
-    const submissionCalendar = userProfile.matchedUser.submissionCalendar
-    let daysCommited = 0
-    for (const timestamp of Object.keys(submissionCalendar)) {
-      // TODO: bisect?
-      const date = new Date(parseInt(timestamp, 10) * 1000) // TODO: iterator map
-      if (date > lastCommitted) {
-        // TODO: will it lose some new activities added in a day later?
-        // TODO: i-th commits in a day?
-        daysCommited += 1
-        for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-          await git.commit(`Synced activities at ${date.toDateString()}`, true, {
-            GIT_AUTHOR_DATE: date.toISOString(),
+
+    for (const date of calendar) {
+      // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
+      if (date > lastSynced) {
+        // daysCommited += 1
+        // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+        await git.commit(
+          `Synced activities at ${date.toDateString()} from ${source.constructor.name}
+
+Source: ${source}\tSource ID:${sourceID}`,
+          true,
+          {
+            GIT_AUTHOR_DATE: formatDateISO8601(date),
             GIT_AUTHOR_NAME: authorName,
             GIT_AUTHOR_EMAIL: authorEmail,
             GIT_COMMITTER_NAME: COMMITTER_NAME,
             GIT_COMMITTER_EMAIL: COMMITTER_EMAIL,
-          })
-        }
+          }
+        )
       }
     }
-    core.info(`Days committed: ${daysCommited}/${Object.keys(submissionCalendar).length}`)
+    core.info(`Activities committed: ${calendar.length}`)
     await git.push()
     core.info("Pushed")
 

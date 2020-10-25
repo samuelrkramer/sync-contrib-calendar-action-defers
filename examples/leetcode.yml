@@ -1,0 +1,31 @@
+on:
+  # Allow manually triggering in repos' Action tab
+  workflow_dispatch:
+
+  # Schedule the workflow to run every day at 00:00am
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Let the checkout action to set up the repo
+      - uses: actions/checkout@v2
+        with:
+          # Commit history would be useful for incremental synchronization.
+          fetch-depth: 0
+
+      # Optionally, specify a timezone, which will be used in GIT_AUTHOR_DATE.
+      # But it does not make much sense as most sources groups activities by days
+      # without considering the timezone.
+      - uses: actions/set-timezone-action@v1.1
+        with:
+          timezoneLinux: "Asia/Shanghai"
+
+      - uses: gowee/sync-contrib-calendar-action@v0.1
+        with:
+          source: leetcode
+          # Either "us" (the default) for leetcode.com, or "cn" for leetcode-cn.com
+          # instance: us
+          username: SOMEONE # As is

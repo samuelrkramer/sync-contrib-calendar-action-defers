@@ -1,22 +1,28 @@
-name: 'Sync Leetcode Activity Graph'
-description: 'Populate the GitHub contribution graph with activies from LeetCode submissions'
+name: 'Sync Contrib Calendar Action'
+description: 'Illuminate the GitHub contribution graph with activities from GitLab, LeetCode, MediaWiki, etc.'
 author: 'Hung-I Wang <whygowe@gmail.com>'
 inputs:
+  source:
+    required: true
+    description: "The source from where to grab the activities"
+  instance:
+    required: false
+    description: "The instance of the specified source"
+  username:
+    required: true
+    description: "The account username on the specified source"
   token:
     required: true
     description: "GitHub personal access token (PAT)"
     default: ${{ github.token }}
-  author_name:
+  author-name:
     required: true
     description: "The name of the author on behalf which the action commits"
     default: ${{ github.actor }}
-  author_email:
+  author-email:
     required: true
     description: "The email of the author on behalf which the action commits"
     default: "${{ github.actor }}@users.noreply.github.com"
-  leetcode_username: # change this
-    required: true
-    description: 'The username of a LeetCode account from where to grab activities'
 runs:
   using: 'node12'
   main: 'dist/index.js'
