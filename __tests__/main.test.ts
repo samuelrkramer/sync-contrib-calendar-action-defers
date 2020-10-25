@@ -56,6 +56,7 @@ test("test runs", () => {
     // calls `exec /path/to/node ...`. The script is installed into a new temporary directory which
     // is put into env.PATH when execSyncing here. That script is where /bin/sh resides again.
     // See https://github.com/yarnpkg/yarn/blob/a4708b29ac74df97bac45365cba4f1d62537ceb7/src/util/portable-script.js#L48
+    console.log(`${nodePath} ${ip}`)
     console.log(`stdout: ${cp.execSync(`${nodePath} ${ip}`, options)}`)
   } catch (e) {
     console.log(`stdout: ${e.stdout}`)
