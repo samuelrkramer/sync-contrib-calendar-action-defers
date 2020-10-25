@@ -1,3 +1,5 @@
+name: "Sync GitLab"
+
 on:
   # Allow manually triggering in repos' Action tab
   workflow_dispatch:
