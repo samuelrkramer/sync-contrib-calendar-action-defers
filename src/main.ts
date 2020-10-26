@@ -5,7 +5,13 @@ import * as core from "@actions/core"
 import getOptionsFromInputs from "./options"
 import { GitController } from "./git"
 import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
-import { formatDateISO8601, simpleSHA1 } from "./utils"
+import {
+  dateFormatterFull,
+  dateFormatterMedium,
+  formatDateISO8601,
+  rtrim,
+  simpleSHA1,
+} from "./utils"
 
 async function run(): Promise<void> {
   try {
@@ -16,6 +22,7 @@ async function run(): Promise<void> {
     core.info(
       `Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`
     )
+    const sourceShortName = rtrim(source.constructor.name, "Source")
 
     const git = await GitController.createAsync(process.cwd())
 
@@ -35,10 +42,12 @@ async function run(): Promise<void> {
       if (date > lastSynced) {
         // daysCommited += 1
         // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-        await git.commit(
-          `Synced activities at ${date.toDateString()} from ${source.constructor.name}
+        const dateText = await git.commit(
+          `Synced activities at ${dateFormatterMedium.format(date)} from ${sourceShortName}
 
-Source: ${source}\tSource ID:${sourceID}`,
+Source: ${source}
+Source ID:${sourceID}
+Date: ${dateFormatterFull.format(date)}`,
           true,
           {
             GIT_AUTHOR_DATE: formatDateISO8601(date),

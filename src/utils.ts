@@ -93,3 +93,21 @@ export function isWikiMediaProject(fqdn: string): boolean {
   }
   return true
 }
+
+export function rtrim(str: string, suffix: string) {
+  if (str.endsWith(suffix)) {
+    str.slice(0, str.length - suffix.length)
+  }
+}
+
+export const dateFormatterFull = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "full",
+  timeStyle: "full",
+} as any)
+
+export const dateFormatterMedium = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+} as any)
+// TODO: Fix any
+// Ref: https://github.com/microsoft/TypeScript/issues/35865

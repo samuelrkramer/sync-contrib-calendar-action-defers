@@ -2,7 +2,7 @@ import assert from "assert"
 import * as core from "@actions/core"
 
 import { getSource, sourceTypes } from "./sources"
-import { BaseActivitySource, IActivitySource } from "./sources/base"
+import { BaseActivitySource, IActivitySource, SourceType } from "./sources/base"
 
 // This SHOULD match the definition in action.yml
 export interface Options {
@@ -25,8 +25,8 @@ export default function getOptionsFromInputs(): Options {
   assert(authorName)
   assert(authorEmail)
 
-  assert(sourceTypes.indexOf(sourceType) !== -1) // FIX: any
-  const sourceClass = getSource(sourceType as any)
+  assert(sourceTypes.indexOf(sourceType) !== -1)
+  const sourceClass = getSource(sourceType as SourceType)
   const source = new sourceClass(instance)
 
   const options = {
