@@ -87,15 +87,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -105,50 +96,51 @@ const options_1 = __importDefault(__webpack_require__(353));
 const git_1 = __webpack_require__(374);
 const common_1 = __webpack_require__(979);
 const utils_1 = __webpack_require__(918);
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const { source, username, authorName, authorEmail } = yield options_1.default();
-            // In commit messages to distinguish lastSynced.
-            // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
-            const sourceID = utils_1.simpleSHA1(`${source}`);
-            core.info(`Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
-            const git = yield git_1.GitController.createAsync(process.cwd());
-            const lastSynced = yield git.getLastCommitDate({
-                message: sourceID,
-                committer: common_1.COMMITTER_NAME,
-            });
-            const calendar = yield source.getCalendar(username, lastSynced);
-            calendar.sort(); // See git.ts:getLastCommitDate for more notes.
-            core.info(`Last synced: ${lastSynced}`);
-            if (lastSynced < new Date(0)) {
-                core.warning("No previous commits by this action are found. Is this repo a shallow clone?");
-            }
-            for (const date of calendar) {
-                // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
-                if (date > lastSynced) {
-                    // daysCommited += 1
-                    // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-                    yield git.commit(`Synced activities at ${date.toDateString()} from ${source.constructor.name}
+async function run() {
+    try {
+        const { source, username, authorName, authorEmail } = await options_1.default();
+        // In commit messages to distinguish lastSynced.
+        // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
+        const sourceID = utils_1.simpleSHA1(`${source}`);
+        core.info(`Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
+        const sourceShortName = utils_1.rtrim(source.constructor.name, "Source");
+        const git = await git_1.GitController.createAsync(process.cwd());
+        const lastSynced = await git.getLastAuthorDate({
+            message: sourceID,
+            committer: common_1.COMMITTER_NAME,
+        });
+        core.info(`Last synced: ${lastSynced}`);
+        if (lastSynced < new Date(0)) {
+            core.warning("No previous commits by this action are found. Is this repo a shallow clone?");
+        }
+        const calendar = await source.getCalendar(username, lastSynced);
+        calendar.sort(); // See git.ts:getLastCommitDate for more notes.
+        for (const date of calendar) {
+            // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
+            if (date > lastSynced) {
+                // daysCommited += 1
+                // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+                const dateText = await git.commit(`Synced activities at ${utils_1.dateFormatterMedium.format(date)} from ${sourceShortName}
 
-Source: ${source}\tSource ID:${sourceID}`, true, {
-                        GIT_AUTHOR_DATE: utils_1.formatDateISO8601(date),
-                        GIT_AUTHOR_NAME: authorName,
-                        GIT_AUTHOR_EMAIL: authorEmail,
-                        GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
-                        GIT_COMMITTER_EMAIL: common_1.COMMITTER_EMAIL,
-                    });
-                }
+Source: ${source}
+Source ID:${sourceID}
+Date: ${utils_1.dateFormatterFull.format(date)}`, true, {
+                    GIT_AUTHOR_DATE: utils_1.formatDateISO8601(date),
+                    GIT_AUTHOR_NAME: authorName,
+                    GIT_AUTHOR_EMAIL: authorEmail,
+                    GIT_COMMITTER_NAME: common_1.COMMITTER_NAME,
+                    GIT_COMMITTER_EMAIL: common_1.COMMITTER_EMAIL,
+                });
             }
-            core.info(`Activities committed: ${calendar.length}`);
-            yield git.push();
-            core.info("Pushed");
-            // core.setOutput("time", new Date().toTimeString())
         }
-        catch (error) {
-            core.setFailed(error.message);
-        }
-    });
+        core.info(`Activities committed: ${calendar.length}`);
+        await git.push();
+        core.info("Pushed");
+        // core.setOutput("time", new Date().toTimeString())
+    }
+    catch (error) {
+        core.setFailed(error.message);
+    }
 }
 run();
 
@@ -1241,7 +1233,7 @@ function getOptionsFromInputs() {
     assert_1.default(username);
     assert_1.default(authorName);
     assert_1.default(authorEmail);
-    assert_1.default(sources_1.sourceTypes.indexOf(sourceType) !== -1); // FIX: any
+    assert_1.default(sources_1.sourceTypes.indexOf(sourceType) !== -1);
     const sourceClass = sources_1.getSource(sourceType);
     const source = new sourceClass(instance);
     const options = {
@@ -1288,15 +1280,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1312,135 +1295,115 @@ class GitController {
         this.inited = false;
         this.repoPath = repoPath;
     }
-    static createAsync(repoPath, allowingNotInited = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const controller = new GitController(repoPath);
-            core.debug("Repo path: " + repoPath);
-            yield controller.prepare(allowingNotInited);
-            return controller;
-        });
+    static async createAsync(repoPath, allowingNotInited = false) {
+        const controller = new GitController(repoPath);
+        core.debug("Repo path: " + repoPath);
+        await controller.prepare(allowingNotInited);
+        return controller;
     }
-    prepare(allowingNotInited = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.gitPath = yield io.which("git", true);
-            core.debug("Git path: " + this.gitPath);
-            let isGitRoot = true;
-            try {
-                isGitRoot = yield this.isTopLevel();
-                this.inited = true;
+    async prepare(allowingNotInited = false) {
+        this.gitPath = await io.which("git", true);
+        core.debug("Git path: " + this.gitPath);
+        let isGitRoot = true;
+        try {
+            isGitRoot = await this.isTopLevel();
+            this.inited = true;
+        }
+        catch (e) {
+            if (!allowingNotInited) {
+                throw e;
             }
-            catch (e) {
-                if (!allowingNotInited) {
-                    throw e;
-                }
-            }
-            if (!isGitRoot) {
-                throw Error(`${this.repoPath} is not a root of a git repository`);
-            }
-            core.debug(`Inited: ${this.inited}`);
-        });
+        }
+        if (!isGitRoot) {
+            throw Error(`${this.repoPath} is not a root of a git repository`);
+        }
+        core.debug(`Inited: ${this.inited}`);
     }
-    configUser(name, email) {
-        return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(this.gitPath);
-            if (name !== undefined) {
-                yield this.exec(["config", "user.name", name]);
-            }
-            if (email !== undefined) {
-                yield this.exec(["config", "user.email", email]);
-            }
-        });
+    async configUser(name, email) {
+        assert_1.default(this.gitPath);
+        if (name !== undefined) {
+            await this.exec(["config", "user.name", name]);
+        }
+        if (email !== undefined) {
+            await this.exec(["config", "user.email", email]);
+        }
     }
-    init() {
-        return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(this.gitPath);
-            yield this.exec(["init"]);
-        });
+    async init() {
+        assert_1.default(this.gitPath);
+        await this.exec(["init"]);
     }
-    isTopLevel() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const topLevel = yield this.getTopLevel();
-            core.debug("Repo toplevel: " + path_1.default.resolve(topLevel));
-            return path_1.default.resolve(topLevel) === path_1.default.resolve(this.repoPath);
-        });
+    async isTopLevel() {
+        const topLevel = await this.getTopLevel();
+        core.debug("Repo toplevel: " + path_1.default.resolve(topLevel));
+        return path_1.default.resolve(topLevel) === path_1.default.resolve(this.repoPath);
     }
-    getTopLevel() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const raw = yield this.exec(["rev-parse", "--show-toplevel"]);
-            return raw.trim();
-        });
+    async getTopLevel() {
+        const raw = await this.exec(["rev-parse", "--show-toplevel"]);
+        return raw.trim();
     }
-    getLastCommitDate(filters) {
-        return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(this.inited);
-            const filterArgs = [];
-            if ((filters === null || filters === void 0 ? void 0 : filters.author) !== undefined) {
-                filterArgs.push("--author", `${filters.author}`);
-            }
-            if ((filters === null || filters === void 0 ? void 0 : filters.committer) !== undefined) {
-                filterArgs.push("--committer", `${filters.committer}`);
-            }
-            if ((filters === null || filters === void 0 ? void 0 : filters.message) !== undefined) {
-                filterArgs.push("--grep", `${filters.message}`);
-            }
-            const rlArgs = ["rev-list", "--all", "--count"];
-            if (parseInt((yield this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
-                return new Date(-1);
-            }
-            else {
-                const logArgs = ["log", "-1", "--format=%ct"]; // %ct for commit time, %at for author time
-                return new Date(parseInt((yield this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000);
-            }
-            // FOR being used as lastSyned:
-            //  If using COMMIT_DATE,
-            //   As most sources (e.g. GitLab) have no accurate dates other than day-by-day calendar, there
-            //   is no way to distinguish activities in one day from each other. A little trick is to add I
-            //   seconds to the date of the I-th activity in a day (e.g. gitlab.ts #L41). With COMMIT_DATE
-            //   used as lastSynced, newly added activities within a day after the run of the action in
-            //   that day would be ignored forever.
-            //  If using AUTHOR_DATE,
-            //   The calendar from sources SHOULD be sorted before committing as the raw data of some
-            //   sources are not in order. If they are not ordered, the action may repeatedly commits some
-            //   previously committed activities.
-        });
+    async getLastAuthorDate(filters) {
+        assert_1.default(this.inited);
+        const filterArgs = [];
+        if ((filters === null || filters === void 0 ? void 0 : filters.author) !== undefined) {
+            filterArgs.push("--author", `${filters.author}`);
+        }
+        if ((filters === null || filters === void 0 ? void 0 : filters.committer) !== undefined) {
+            filterArgs.push("--committer", `${filters.committer}`);
+        }
+        if ((filters === null || filters === void 0 ? void 0 : filters.message) !== undefined) {
+            filterArgs.push("--grep", `${filters.message}`);
+        }
+        const rlArgs = ["rev-list", "--count", "HEAD"];
+        if (parseInt((await this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
+            return new Date(-1);
+        }
+        else {
+            const logArgs = ["log", "-1", "--format=%at"]; // %ct for commit time, %at for author time
+            return new Date(parseInt((await this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000);
+        }
+        // FOR being used as lastSyned:
+        //  If using COMMIT_DATE,
+        //   As most sources (e.g. GitLab) have no accurate dates other than day-by-day calendar, there
+        //   is no way to distinguish activities in one day from each other. A little trick is to add I
+        //   seconds to the date of the I-th activity in a day (e.g. gitlab.ts #L41). With COMMIT_DATE
+        //   used as lastSynced, newly added activities within a day after the run of the action in
+        //   that day would be ignored forever. (Or use the last second of that day?)
+        //  If using AUTHOR_DATE,
+        //   The calendar from sources SHOULD be sorted before committing as the raw data of some
+        //   sources are not in order. If they are not ordered, the action may repeatedly commits some
+        //   previously committed activities.
     }
-    commit(message, allowingEmpty = false, env) {
-        return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(this.inited);
-            const args = ["commit", "-m", `${message}`];
-            if (allowingEmpty) {
-                args.push("--allow-empty");
-            }
-            // TODO: abstract GIT_{COMMITTER,AUTHOR}_{NAME,EMAIL,DATE} into options in params
-            yield this.exec(args, env);
-        });
+    async commit(message, allowingEmpty = false, env) {
+        assert_1.default(this.inited);
+        const args = ["commit", "-m", `${message}`];
+        if (allowingEmpty) {
+            args.push("--allow-empty");
+        }
+        // TODO: abstract GIT_{COMMITTER,AUTHOR}_{NAME,EMAIL,DATE} into options in params
+        await this.exec(args, env);
     }
-    push() {
-        return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(this.inited);
-            yield this.exec(["push"]);
-        });
+    async push() {
+        assert_1.default(this.inited);
+        await this.exec(["push"]);
     }
-    exec(args, additionalEnv) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Ref: https://github.com/actions/checkout/blob/a81bbbf8298c0fa03ea29cdc473d45769f953675/src/git-command-manager.ts#L425
-            const env = Object.assign(Object.assign({}, process.env), additionalEnv); // eslint-disable-line @typescript-eslint/no-explicit-any
-            const stdout = [];
-            const options = {
-                cwd: this.repoPath,
-                env,
-                listeners: {
-                    stdout: (data) => {
-                        stdout.push(data.toString());
-                    },
+    async exec(args, additionalEnv) {
+        // Ref: https://github.com/actions/checkout/blob/a81bbbf8298c0fa03ea29cdc473d45769f953675/src/git-command-manager.ts#L425
+        const env = { ...process.env, ...additionalEnv }; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const stdout = [];
+        const options = {
+            cwd: this.repoPath,
+            env,
+            listeners: {
+                stdout: (data) => {
+                    stdout.push(data.toString());
                 },
-            };
-            // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
-            const exitCode = yield exec_1.exec(`"${this.gitPath}"`, args, options);
-            assert_1.default(exitCode === 0);
-            // core.debug("stdout: " + stdout)
-            return stdout.join("");
-        });
+            },
+        };
+        // Here ignoreReturnCode is unset, resulting in error raised for non-0 exit code.
+        const exitCode = await exec_1.exec(`"${this.gitPath}"`, args, options);
+        assert_1.default(exitCode === 0);
+        // core.debug("stdout: " + stdout)
+        return stdout.join("");
     }
 }
 exports.GitController = GitController;
@@ -3491,15 +3454,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -3530,70 +3484,66 @@ class MediaWikiSource extends base_1.BaseActivitySource {
         this.instanceUrl = instance;
         core.debug("Using WikiPedia instance: " + this.instanceUrl);
     }
-    getCalendar(username, lastSynced) {
+    async getCalendar(username, lastSynced) {
         var _a, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
-            // TODO: or instead allow to specify the maximum time range in inputs
-            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
-            core.debug(`Effective time bound: ${oldBound}`);
-            const contribs = [];
-            let partialContribs;
-            let uccontinue = undefined;
-            do {
-                const result = yield this.queryUserContribs(username, oldBound.toISOString(), uccontinue);
-                partialContribs = (_a = result.query.usercontribs) !== null && _a !== void 0 ? _a : [];
-                contribs.push(...Array.from(partialContribs));
-                uccontinue = (_b = result === null || result === void 0 ? void 0 : result.continue) === null || _b === void 0 ? void 0 : _b.uccontinue;
-                core.debug(`Current chunk size: ${(_c = partialContribs === null || partialContribs === void 0 ? void 0 : partialContribs.length) !== null && _c !== void 0 ? _c : -1}, current cumulative size: ${contribs.length}, next uccontinue: ${uccontinue}`);
-                console.log(partialContribs);
-            } while (partialContribs &&
-                partialContribs.length > 0 &&
-                uccontinue &&
-                new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound);
-            if (contribs.length > 0) {
-                core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`);
-                core.debug(`First contrib of the last chunk is at ${partialContribs[0].timestamp}`);
+        core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+        // TODO: or instead allow to specify the maximum time range in inputs
+        const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+        core.debug(`Effective time bound: ${oldBound}`);
+        const contribs = [];
+        let partialContribs;
+        let uccontinue = undefined;
+        do {
+            const result = await this.queryUserContribs(username, oldBound.toISOString(), uccontinue);
+            partialContribs = (_a = result.query.usercontribs) !== null && _a !== void 0 ? _a : [];
+            contribs.push(...Array.from(partialContribs));
+            uccontinue = (_b = result === null || result === void 0 ? void 0 : result.continue) === null || _b === void 0 ? void 0 : _b.uccontinue;
+            core.debug(`Current chunk size: ${(_c = partialContribs === null || partialContribs === void 0 ? void 0 : partialContribs.length) !== null && _c !== void 0 ? _c : -1}, current cumulative size: ${contribs.length}, next uccontinue: ${uccontinue}`);
+            console.log(partialContribs);
+        } while (partialContribs &&
+            partialContribs.length > 0 &&
+            uccontinue &&
+            new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound);
+        if (contribs.length > 0) {
+            core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`);
+            core.debug(`First contrib of the last chunk is at ${partialContribs[0].timestamp}`);
+        }
+        else {
+            core.warning("No contributions from this user are found. Are the username and instance URL correct?");
+        }
+        const calendar = [];
+        for (const contrib of contribs) {
+            const date = new Date(contrib.timestamp);
+            if (date > oldBound) {
+                calendar.push(date);
             }
-            else {
-                core.warning("No contributions from this user are found. Are the username and instance URL correct?");
-            }
-            const calendar = [];
-            for (const contrib of contribs) {
-                const date = new Date(contrib.timestamp);
-                if (date > oldBound) {
-                    calendar.push(date);
-                }
-            }
-            core.debug(`Total queryed contribs: ${contribs.length}`);
-            core.debug(`Effective new activities: ${calendar.length}`);
-            return calendar;
-        });
+        }
+        core.debug(`Total queryed contribs: ${contribs.length}`);
+        core.debug(`Effective new activities: ${calendar.length}`);
+        return calendar;
     }
-    queryUserContribs(ucuser, ucend, uccontinue) {
+    async queryUserContribs(ucuser, ucend, uccontinue) {
         var _a, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`Querying contribs for ${JSON.stringify(ucuser)} (quoted as: ${encodeURIComponent(ucuser)})`);
-            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
-            const params = {
-                action: "query",
-                list: "usercontribs",
-                ucuser,
-                ucend,
-                uccontinue,
-                uclimit: 500,
-                format: "json",
-            };
-            const url = utils_1.joinUrl(this.instanceUrl, `api.php?${utils_1.constructURLParamString(params)}`);
-            core.debug("UserContribs API URL: " + url);
-            const response = yield node_fetch_1.default(url, { headers: common_1.JSON_REQUEST_HEADERS });
-            const raw = yield response.json();
-            core.debug(`First-level keys of response: ${Object.keys(raw)}`);
-            if (Object.prototype.hasOwnProperty.call(raw, "error")) {
-                throw Error(`Error when querying usercontribs: ${(_a = raw.error) === null || _a === void 0 ? void 0 : _a.code}\n${(_b = raw.error) === null || _b === void 0 ? void 0 : _b.info}`);
-            }
-            return raw;
-        });
+        core.debug(`Querying contribs for ${JSON.stringify(ucuser)} (quoted as: ${encodeURIComponent(ucuser)})`);
+        // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+        const params = {
+            action: "query",
+            list: "usercontribs",
+            ucuser,
+            ucend,
+            uccontinue,
+            uclimit: 500,
+            format: "json",
+        };
+        const url = utils_1.joinUrl(this.instanceUrl, `api.php?${utils_1.constructURLParamString(params)}`);
+        core.debug("UserContribs API URL: " + url);
+        const response = await node_fetch_1.default(url, { headers: common_1.JSON_REQUEST_HEADERS });
+        const raw = await response.json();
+        core.debug(`First-level keys of response: ${Object.keys(raw)}`);
+        if (Object.prototype.hasOwnProperty.call(raw, "error")) {
+            throw Error(`Error when querying usercontribs: ${(_a = raw.error) === null || _a === void 0 ? void 0 : _a.code}\n${(_b = raw.error) === null || _b === void 0 ? void 0 : _b.info}`);
+        }
+        return raw;
     }
 }
 exports.default = MediaWikiSource;
@@ -3639,15 +3589,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -3670,30 +3611,28 @@ class GitLabSource extends base_1.BaseActivitySource {
         }
         core.debug("Using GitLab instance: " + this.instanceUrl);
     }
-    getCalendar(username, lastSynced) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = utils_1.joinUrl(this.instanceUrl, `/users/${username}/calendar.json`);
-            core.debug("Calendar API URL: " + url);
-            const response = yield node_fetch_1.default(url, {
-                headers: common_1.JSON_REQUEST_HEADERS,
-            });
-            const raw = yield response.json();
-            const calendar = [];
-            for (const yyyymmdd of Object.keys(raw)) {
-                const date = new Date(yyyymmdd);
-                assert_1.default(!isNaN(date.getTime()));
-                for (let i = 0; i < raw[yyyymmdd]; i++) {
-                    // A little trick to distinguish activities between each other within one day
-                    const offsetDate = new Date(date.getTime() + i * 1000);
-                    if (offsetDate > lastSynced) {
-                        calendar.push(offsetDate);
-                    }
+    async getCalendar(username, lastSynced) {
+        const url = utils_1.joinUrl(this.instanceUrl, `/users/${username}/calendar.json`);
+        core.debug("Calendar API URL: " + url);
+        const response = await node_fetch_1.default(url, {
+            headers: common_1.JSON_REQUEST_HEADERS,
+        });
+        const raw = await response.json();
+        const calendar = [];
+        for (const yyyymmdd of Object.keys(raw)) {
+            const date = new Date(yyyymmdd);
+            assert_1.default(!isNaN(date.getTime()));
+            for (let i = 0; i < raw[yyyymmdd]; i++) {
+                // A little trick to distinguish activities between each other within one day
+                const offsetDate = new Date(date.getTime() + i * 1000);
+                if (offsetDate > lastSynced) {
+                    calendar.push(offsetDate);
                 }
             }
-            core.debug(`Total days in calendar: ${Object.keys(raw).length}`);
-            core.debug(`New activities: ${calendar.length}`);
-            return calendar;
-        });
+        }
+        core.debug(`Total days in calendar: ${Object.keys(raw).length}`);
+        core.debug(`New activities: ${calendar.length}`);
+        return calendar;
     }
 }
 exports.default = GitLabSource;
@@ -3725,15 +3664,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -3744,34 +3674,30 @@ const core = __importStar(__webpack_require__(186));
 const common_1 = __webpack_require__(979);
 const base_1 = __webpack_require__(175);
 const console_1 = __webpack_require__(82);
-function getUserProfile(username) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const payload = {
-            operationName: "getUserProfile",
-            variables: { username },
-            query: "query getUserProfile($username: String!) {\n  allQuestionsCount {\n    difficulty\n    count\n    __typename\n  }\n  matchedUser(username: $username) {\n    username\n    socialAccounts\n    githubUrl\n    contributions {\n      points\n      questionCount\n      testcaseCount\n      __typename\n    }\n    profile {\n      realName\n      websites\n      countryName\n      skillTags\n      company\n      school\n      starRating\n      aboutMe\n      userAvatar\n      reputation\n      ranking\n      __typename\n    }\n    submissionCalendar\n    submitStats {\n      acSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      totalSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
-        };
-        const response = yield node_fetch_1.default("https://leetcode.com/graphql", {
-            headers: common_1.JSON_REQUEST_HEADERS,
-            // "referrer": "https://leetcode.com/",
-            body: JSON.stringify(payload),
-            method: "POST",
-        });
-        const data = (yield response.json()).data;
-        data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar);
-        // core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
-        return data;
+async function getUserProfile(username) {
+    const payload = {
+        operationName: "getUserProfile",
+        variables: { username },
+        query: "query getUserProfile($username: String!) {\n  allQuestionsCount {\n    difficulty\n    count\n    __typename\n  }\n  matchedUser(username: $username) {\n    username\n    socialAccounts\n    githubUrl\n    contributions {\n      points\n      questionCount\n      testcaseCount\n      __typename\n    }\n    profile {\n      realName\n      websites\n      countryName\n      skillTags\n      company\n      school\n      starRating\n      aboutMe\n      userAvatar\n      reputation\n      ranking\n      __typename\n    }\n    submissionCalendar\n    submitStats {\n      acSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      totalSubmissionNum {\n        difficulty\n        count\n        submissions\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
+    };
+    const response = await node_fetch_1.default("https://leetcode.com/graphql", {
+        headers: common_1.JSON_REQUEST_HEADERS,
+        // "referrer": "https://leetcode.com/",
+        body: JSON.stringify(payload),
+        method: "POST",
     });
+    const data = (await response.json()).data;
+    data.matchedUser.submissionCalendar = JSON.parse(data.matchedUser.submissionCalendar);
+    // core.debug(`Profile: ${JSON.stringify(userProfile.matchedUser.profile)}`)
+    return data;
 }
-function getUserSubmissionCalendar(username) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const response = yield node_fetch_1.default(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
-            headers: common_1.JSON_REQUEST_HEADERS,
-            // "referrer": `https://leetcode-cn.com/u/${username}/`,
-            method: "GET",
-        });
-        return yield response.json();
+async function getUserSubmissionCalendar(username) {
+    const response = await node_fetch_1.default(`https://leetcode-cn.com/api/user_submission_calendar/${username}/`, {
+        headers: common_1.JSON_REQUEST_HEADERS,
+        // "referrer": `https://leetcode-cn.com/u/${username}/`,
+        method: "GET",
     });
+    return await response.json();
 }
 class LeetCodeSource extends base_1.BaseActivitySource {
     constructor(instance) {
@@ -3780,10 +3706,10 @@ class LeetCodeSource extends base_1.BaseActivitySource {
             case "us":
             case "":
             case undefined:
-                this.getSubmissionCalendar = (username) => __awaiter(this, void 0, void 0, function* () {
-                    const userProfile = yield getUserProfile(username);
+                this.getSubmissionCalendar = async (username) => {
+                    const userProfile = await getUserProfile(username);
                     return userProfile.matchedUser.submissionCalendar;
-                });
+                };
                 core.debug("LeetCode: leetcode.com");
                 break;
             case "cn":
@@ -3794,28 +3720,26 @@ class LeetCodeSource extends base_1.BaseActivitySource {
                 throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`);
         }
     }
-    getCalendar(username, lastSynced = new Date(-1)) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // const userProfile = await getUserProfile(username)
-            const submissionCalendar = yield this.getSubmissionCalendar(username);
-            const calendar = [];
-            // Bisect won't work as the object keys is unordered.
-            for (const timestamp of Object.keys(submissionCalendar)) {
-                const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
-                console_1.assert(!isNaN(date.getTime()));
-                for (let i = 0; i < submissionCalendar[timestamp]; i++) {
-                    // A little trick to distinguish activities between each other within one day
-                    const offsetDate = new Date(date.getTime() + i * 1000);
-                    if (offsetDate > lastSynced) {
-                        // TODO: will it lose some new activities added in a day later?
-                        calendar.push(offsetDate);
-                    }
+    async getCalendar(username, lastSynced = new Date(-1)) {
+        // const userProfile = await getUserProfile(username)
+        const submissionCalendar = await this.getSubmissionCalendar(username);
+        const calendar = [];
+        // Bisect won't work as the object keys is unordered.
+        for (const timestamp of Object.keys(submissionCalendar)) {
+            const date = new Date(parseInt(timestamp, 10) * 1000); // TODO: iterator map
+            console_1.assert(!isNaN(date.getTime()));
+            for (let i = 0; i < submissionCalendar[timestamp]; i++) {
+                // A little trick to distinguish activities between each other within one day
+                const offsetDate = new Date(date.getTime() + i * 1000);
+                if (offsetDate > lastSynced) {
+                    // TODO: will it lose some new activities added in a day later?
+                    calendar.push(offsetDate);
                 }
             }
-            core.debug(`Total days in calendar: ${Object.keys(submissionCalendar).length}`);
-            core.debug(`New activities: ${calendar.length}`);
-            return calendar;
-        });
+        }
+        core.debug(`Total days in calendar: ${Object.keys(submissionCalendar).length}`);
+        core.debug(`New activities: ${calendar.length}`);
+        return calendar;
     }
 }
 exports.default = LeetCodeSource;
@@ -3911,15 +3835,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -3945,59 +3860,55 @@ class GerritSource extends base_1.BaseActivitySource {
         }
         core.debug("Using Gerrit instance: " + this.instanceUrl);
     }
-    getCalendar(username, lastSynced) {
+    async getCalendar(username, lastSynced) {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
-            // TODO: or instead allow to specify the maximum time range in inputs
-            const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
-            let offset = 0;
-            const changes = [];
-            let partialChanges;
-            do {
-                partialChanges = yield this.queryChanges(username, offset);
-                changes.push(...partialChanges);
-                offset += partialChanges.length;
-                core.debug(`Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`);
-            } while (partialChanges.length > 0 &&
-                partialChanges[partialChanges.length - 1]._more_changes === true &&
-                new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound);
-            core.debug(`Last change created at ${changes[changes.length - 1].created}`);
-            core.debug(`First change of the last chunk created at ${(_a = partialChanges[0]) === null || _a === void 0 ? void 0 : _a.created}`);
-            const calendar = [];
-            for (const change of changes) {
-                const date = new Date(`${change.created} UTC`);
-                if (date > oldBound) {
-                    calendar.push(date);
-                }
+        core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+        // TODO: or instead allow to specify the maximum time range in inputs
+        const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
+        let offset = 0;
+        const changes = [];
+        let partialChanges;
+        do {
+            partialChanges = await this.queryChanges(username, offset);
+            changes.push(...partialChanges);
+            offset += partialChanges.length;
+            core.debug(`Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`);
+        } while (partialChanges.length > 0 &&
+            partialChanges[partialChanges.length - 1]._more_changes === true &&
+            new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound);
+        core.debug(`Last change created at ${changes[changes.length - 1].created}`);
+        core.debug(`First change of the last chunk created at ${(_a = partialChanges[0]) === null || _a === void 0 ? void 0 : _a.created}`);
+        const calendar = [];
+        for (const change of changes) {
+            const date = new Date(`${change.created} UTC`);
+            if (date > oldBound) {
+                calendar.push(date);
             }
-            core.debug(`Total changes in queryed calendar: ${changes.length}`);
-            core.debug(`Effective new activities: ${calendar.length}`);
-            return calendar;
-        });
+        }
+        core.debug(`Total changes in queryed calendar: ${changes.length}`);
+        core.debug(`Effective new activities: ${calendar.length}`);
+        return calendar;
     }
-    queryChanges(owner, start = 0, limit, noLimit = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`Querying changes for ${JSON.stringify(owner)} (quoted as: ${encodeURIComponent(owner)})`);
-            // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
-            let pathQuery = `changes/?q=owner:${encodeURIComponent(owner)}&o=DETAILED_ACCOUNTS&start=${start}`;
-            if (limit !== undefined) {
-                pathQuery += `&limit=${limit}`;
-            }
-            if (noLimit) {
-                pathQuery += "&no-limit";
-            }
-            core.debug(`Path query: ${pathQuery}`);
-            const url = utils_1.joinUrl(this.instanceUrl, pathQuery);
-            core.debug("Calendar API URL: " + url);
-            // Note: with core.debug, the % will be quoted again upon printing!
-            const response = yield node_fetch_1.default(url, {
-                headers: common_1.JSON_REQUEST_HEADERS,
-            });
-            const raw = yield response.text();
-            core.debug(`Raw response (first 50 of ${raw.length}): ${raw.slice(0, 50)}`);
-            return JSON.parse(raw.slice(5));
+    async queryChanges(owner, start = 0, limit, noLimit = false) {
+        core.debug(`Querying changes for ${JSON.stringify(owner)} (quoted as: ${encodeURIComponent(owner)})`);
+        // Do not encodeURIComponent the whole param as ":" would be  quoted into %3A.
+        let pathQuery = `changes/?q=owner:${encodeURIComponent(owner)}&o=DETAILED_ACCOUNTS&start=${start}`;
+        if (limit !== undefined) {
+            pathQuery += `&limit=${limit}`;
+        }
+        if (noLimit) {
+            pathQuery += "&no-limit";
+        }
+        core.debug(`Path query: ${pathQuery}`);
+        const url = utils_1.joinUrl(this.instanceUrl, pathQuery);
+        core.debug("Calendar API URL: " + url);
+        // Note: with core.debug, the % will be quoted again upon printing!
+        const response = await node_fetch_1.default(url, {
+            headers: common_1.JSON_REQUEST_HEADERS,
         });
+        const raw = await response.text();
+        core.debug(`Raw response (first 50 of ${raw.length}): ${raw.slice(0, 50)}`);
+        return JSON.parse(raw.slice(5));
     }
 }
 exports.default = GerritSource;
@@ -4029,7 +3940,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isWikiMediaProject = exports.constructURLParamString = exports.oneYearAgo = exports.formatDateISO8601 = exports.joinUrl = exports.simpleSHA1 = void 0;
+exports.dateFormatterMedium = exports.dateFormatterFull = exports.rtrim = exports.isWikiMediaProject = exports.constructURLParamString = exports.oneYearAgo = exports.formatDateISO8601 = exports.joinUrl = exports.simpleSHA1 = void 0;
 const assert_1 = __importDefault(__webpack_require__(357));
 const crypto_1 = __importDefault(__webpack_require__(417));
 function simpleSHA1(text) {
@@ -4120,6 +4031,22 @@ function isWikiMediaProject(fqdn) {
     return true;
 }
 exports.isWikiMediaProject = isWikiMediaProject;
+function rtrim(str, suffix) {
+    if (str.endsWith(suffix)) {
+        str.slice(0, str.length - suffix.length);
+    }
+}
+exports.rtrim = rtrim;
+exports.dateFormatterFull = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "full",
+    timeStyle: "full",
+});
+exports.dateFormatterMedium = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+});
+// TODO: Fix any
+// Ref: https://github.com/microsoft/TypeScript/issues/35865
 
 
 /***/ }),
