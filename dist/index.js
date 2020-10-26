@@ -114,11 +114,12 @@ function run() {
             const sourceID = utils_1.simpleSHA1(`${source}`);
             core.info(`Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
             const git = yield git_1.GitController.createAsync(process.cwd());
-            const lastSynced = yield git.getLatestTimestamp({
+            const lastSynced = yield git.getLastCommitDate({
                 message: sourceID,
                 committer: common_1.COMMITTER_NAME,
             });
             const calendar = yield source.getCalendar(username, lastSynced);
+            calendar.sort(); // See git.ts:getLastCommitDate for more notes.
             core.info(`Last synced: ${lastSynced}`);
             if (lastSynced < new Date(0)) {
                 core.warning("No previous commits by this action are found. Is this repo a shallow clone?");
@@ -1369,7 +1370,7 @@ class GitController {
             return raw.trim();
         });
     }
-    getLatestTimestamp(filters) {
+    getLastCommitDate(filters) {
         return __awaiter(this, void 0, void 0, function* () {
             assert_1.default(this.inited);
             const filterArgs = [];
@@ -1387,10 +1388,20 @@ class GitController {
                 return new Date(-1);
             }
             else {
-                const logArgs = ["log", "-1", "--format=%at"];
+                const logArgs = ["log", "-1", "--format=%ct"]; // %ct for commit time, %at for author time
                 return new Date(parseInt((yield this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000);
             }
-            // TODO: use author or commit datetime?
+            // FOR being used as lastSyned:
+            //  If using COMMIT_DATE,
+            //   As most sources (e.g. GitLab) have no accurate dates other than day-by-day calendar, there
+            //   is no way to distinguish activities in one day from each other. A little trick is to add I
+            //   seconds to the date of the I-th activity in a day (e.g. gitlab.ts #L41). With COMMIT_DATE
+            //   used as lastSynced, newly added activities within a day after the run of the action in
+            //   that day would be ignored forever.
+            //  If using AUTHOR_DATE,
+            //   The calendar from sources SHOULD be sorted before committing as the raw data of some
+            //   sources are not in order. If they are not ordered, the action may repeatedly commits some
+            //   previously committed activities.
         });
     }
     commit(message, allowingEmpty = false, env) {
@@ -3509,7 +3520,7 @@ class MediaWikiSource extends base_1.BaseActivitySource {
             }
         }
         else {
-            throw Error("The instance URL of WikiPedia is not specified");
+            throw Error("The instance URL of MediaWiki is not specified");
         }
         if (utils_1.isWikiMediaProject(new URL(instance).hostname)) {
             // eslint-disable-next-line quotes
@@ -3673,7 +3684,7 @@ class GitLabSource extends base_1.BaseActivitySource {
                 assert_1.default(!isNaN(date.getTime()));
                 for (let i = 0; i < raw[yyyymmdd]; i++) {
                     // A little trick to distinguish activities between each other within one day
-                    const offsetDate = new Date(date.getTime() + i);
+                    const offsetDate = new Date(date.getTime() + i * 1000);
                     if (offsetDate > lastSynced) {
                         calendar.push(offsetDate);
                     }
@@ -3794,7 +3805,7 @@ class LeetCodeSource extends base_1.BaseActivitySource {
                 console_1.assert(!isNaN(date.getTime()));
                 for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                     // A little trick to distinguish activities between each other within one day
-                    const offsetDate = new Date(date.getTime() + i);
+                    const offsetDate = new Date(date.getTime() + i * 1000);
                     if (offsetDate > lastSynced) {
                         // TODO: will it lose some new activities added in a day later?
                         calendar.push(offsetDate);
