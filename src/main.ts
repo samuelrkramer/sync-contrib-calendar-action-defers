@@ -19,16 +19,16 @@ async function run(): Promise<void> {
 
     const git = await GitController.createAsync(process.cwd())
 
-    const lastSynced = await git.getLastCommitDate({
+    const lastSynced = await git.getLastAuthorDate({
       message: sourceID,
       committer: COMMITTER_NAME,
     })
-    const calendar = await source.getCalendar(username, lastSynced)
-    calendar.sort() // See git.ts:getLastCommitDate for more notes.
     core.info(`Last synced: ${lastSynced}`)
     if (lastSynced < new Date(0)) {
       core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
     }
+    const calendar = await source.getCalendar(username, lastSynced)
+    calendar.sort() // See git.ts:getLastCommitDate for more notes.
 
     for (const date of calendar) {
       // TODO: really need to recheck date again now that it has benn done in source.getCalendar?

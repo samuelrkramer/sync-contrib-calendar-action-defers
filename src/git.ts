@@ -64,7 +64,7 @@ export class GitController {
     return raw.trim()
   }
 
-  async getLastCommitDate(filters?: {
+  async getLastAuthorDate(filters?: {
     author?: string
     committer?: string
     message?: string
@@ -85,7 +85,7 @@ export class GitController {
     if (parseInt((await this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
       return new Date(-1)
     } else {
-      const logArgs = ["log", "-1", "--format=%ct"] // %ct for commit time, %at for author time
+      const logArgs = ["log", "-1", "--format=%at"] // %ct for commit time, %at for author time
       return new Date(parseInt((await this.exec(logArgs.concat(filterArgs))).trim(), 10) * 1000)
     }
     // FOR being used as lastSyned:
@@ -94,7 +94,7 @@ export class GitController {
     //   is no way to distinguish activities in one day from each other. A little trick is to add I
     //   seconds to the date of the I-th activity in a day (e.g. gitlab.ts #L41). With COMMIT_DATE
     //   used as lastSynced, newly added activities within a day after the run of the action in
-    //   that day would be ignored forever.
+    //   that day would be ignored forever. (Or use the last second of that day?)
     //  If using AUTHOR_DATE,
     //   The calendar from sources SHOULD be sorted before committing as the raw data of some
     //   sources are not in order. If they are not ordered, the action may repeatedly commits some
