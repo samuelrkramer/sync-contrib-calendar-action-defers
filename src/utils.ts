@@ -96,8 +96,9 @@ export function isWikiMediaProject(fqdn: string): boolean {
 
 export function rtrim(str: string, suffix: string) {
   if (str.endsWith(suffix)) {
-    str.slice(0, str.length - suffix.length)
+    str = str.slice(0, str.length - suffix.length)
   }
+  return str
 }
 
 export const dateFormatterFull = new Intl.DateTimeFormat("en-US", {
