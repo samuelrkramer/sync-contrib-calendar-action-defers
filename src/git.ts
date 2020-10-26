@@ -81,7 +81,7 @@ export class GitController {
       filterArgs.push("--grep", `${filters.message}`)
     }
 
-    const rlArgs = ["rev-list", "--all", "--count"]
+    const rlArgs = ["rev-list", "--count", "HEAD"]
     if (parseInt((await this.exec(rlArgs.concat(filterArgs))).trim(), 10) === 0) {
       return new Date(-1)
     } else {
