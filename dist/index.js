@@ -99,14 +99,14 @@ const utils_1 = __webpack_require__(918);
 async function run() {
     try {
         const { source, username, authorName, authorEmail } = await options_1.default();
+        // TODO: redact username / instance url?
         // In commit messages to distinguish lastSynced.
-        // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
-        const sourceID = utils_1.simpleSHA1(`${source}`);
-        core.info(`Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
+        const activitySetID = utils_1.simpleSHA1(`${source}|${username}`);
+        core.info(`Source: ${source}\tSource ID:${activitySetID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`);
         const sourceShortName = utils_1.rtrim(source.constructor.name, "Source");
         const git = await git_1.GitController.createAsync(process.cwd());
         const lastSynced = await git.getLastAuthorDate({
-            message: sourceID,
+            message: activitySetID,
             committer: common_1.COMMITTER_NAME,
         });
         core.info(`Last synced: ${lastSynced}`);
@@ -122,8 +122,9 @@ async function run() {
                 // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                 const dateText = await git.commit(`Synced activities at ${utils_1.dateFormatterMedium.format(date)} from ${sourceShortName}
 
+Activity Set ID:${activitySetID}
 Source: ${source}
-Source ID:${sourceID}
+Username: ${username}
 Date: ${utils_1.dateFormatterFull.format(date)}`, true, {
                     GIT_AUTHOR_DATE: utils_1.formatDateISO8601(date),
                     GIT_AUTHOR_NAME: authorName,
@@ -4033,8 +4034,9 @@ function isWikiMediaProject(fqdn) {
 exports.isWikiMediaProject = isWikiMediaProject;
 function rtrim(str, suffix) {
     if (str.endsWith(suffix)) {
-        str.slice(0, str.length - suffix.length);
+        str = str.slice(0, str.length - suffix.length);
     }
+    return str;
 }
 exports.rtrim = rtrim;
 exports.dateFormatterFull = new Intl.DateTimeFormat("en-US", {
