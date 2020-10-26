@@ -16,18 +16,18 @@ import {
 async function run(): Promise<void> {
   try {
     const { source, username, authorName, authorEmail } = await getOptionsFromInputs()
+    // TODO: redact username / instance url?
     // In commit messages to distinguish lastSynced.
-    // TODO: or distinguish lastSyned by activitySetID=simpleSHA1(`${source} for ${username}`)?
-    const sourceID = simpleSHA1(`${source}`)
+    const activitySetID = simpleSHA1(`${source}|${username}`)
     core.info(
-      `Source: ${source}\tSource ID:${sourceID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`
+      `Source: ${source}\tSource ID:${activitySetID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`
     )
     const sourceShortName = rtrim(source.constructor.name, "Source")
 
     const git = await GitController.createAsync(process.cwd())
 
     const lastSynced = await git.getLastAuthorDate({
-      message: sourceID,
+      message: activitySetID,
       committer: COMMITTER_NAME,
     })
     core.info(`Last synced: ${lastSynced}`)
@@ -45,8 +45,9 @@ async function run(): Promise<void> {
         const dateText = await git.commit(
           `Synced activities at ${dateFormatterMedium.format(date)} from ${sourceShortName}
 
+Activity Set ID:${activitySetID}
 Source: ${source}
-Source ID:${sourceID}
+Username: ${username}
 Date: ${dateFormatterFull.format(date)}`,
           true,
           {
