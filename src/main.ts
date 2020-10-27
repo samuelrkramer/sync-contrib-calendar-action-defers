@@ -68,7 +68,17 @@ Date: ${dateFormatterFull.format(date)}`,
       }
     }
     core.info(`Activities committed: ${calendar.length}`)
-    await git.push()
+    try {
+      await git.push()
+    } catch (e) {
+      core.error(`Error when pushing!
+
+If the log shows there is conflict, then check if multiple workflows are running simultaneous
+or if the job is rerun manually against a stale commit.
+
+Otherwise, please open a new issue if necessary.`)
+      throw e
+    }
     core.info("Pushed")
   } catch (error) {
     core.setFailed(error.message)
