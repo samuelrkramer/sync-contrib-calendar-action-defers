@@ -97,6 +97,7 @@ const git_1 = __webpack_require__(374);
 const common_1 = __webpack_require__(979);
 const utils_1 = __webpack_require__(918);
 async function run() {
+    core.info(common_1.USER_AGENT);
     try {
         const { source, username, authorName, authorEmail, limit1year } = options_1.default();
         // TODO: redact username / instance url?
@@ -141,7 +142,18 @@ Date: ${utils_1.dateFormatterFull.format(date)}`, true, {
             }
         }
         core.info(`Activities committed: ${calendar.length}`);
-        await git.push();
+        try {
+            await git.push();
+        }
+        catch (e) {
+            core.error(`Error when pushing!
+
+If the log shows there is conflict, then check if multiple workflows are running simultaneous
+or if the job is rerun manually against a stale commit.
+
+Otherwise, please open a new issue if necessary.`);
+            throw e;
+        }
         core.info("Pushed");
     }
     catch (error) {
@@ -4268,7 +4280,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.COMMITTER_EMAIL = exports.COMMITTER_NAME = exports.JSON_REQUEST_HEADERS = exports.USER_AGENT = exports.PACKAGE_IDENTIFIER = void 0;
 const package_json_1 = __importDefault(__webpack_require__(119));
-exports.PACKAGE_IDENTIFIER = `${package_json_1.default.name}/${package_json_1.default.NAME}`;
+exports.PACKAGE_IDENTIFIER = `${package_json_1.default.name}/${package_json_1.default.version}`;
 exports.USER_AGENT = `${exports.PACKAGE_IDENTIFIER} (+${package_json_1.default.homepage})`;
 exports.JSON_REQUEST_HEADERS = {
     "User-Agent": exports.USER_AGENT,
