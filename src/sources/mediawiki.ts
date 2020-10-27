@@ -46,7 +46,7 @@ export default class MediaWikiSource extends BaseActivitySource {
       throw Error("The instance URL of MediaWiki is not specified")
     }
 
-    if (isWikiMediaProject(new URL(instance).hostname)) {
+    if (isWikiMediaProject(new URL(instance).hostname) && !instance.endsWith("/w/")) {
       // eslint-disable-next-line quotes
       core.warning('For most WikiMedia projects, the instance url should include a trailing "w/".')
       //  or "wiki/."
