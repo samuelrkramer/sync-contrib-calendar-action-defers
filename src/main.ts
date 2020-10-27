@@ -20,7 +20,7 @@ async function run(): Promise<void> {
     // In commit messages to distinguish lastSynced.
     const activitySetID = simpleSHA1(`${source}|${username}`)
     core.info(
-      `Source: ${source}\tSource ID:${activitySetID}\nUsername: ${username}\nCommit author: ${authorName} <${authorEmail}>`
+      `Source: ${source}\nUsername: ${username}\nActivity Set ID:${activitySetID}\nCommit author: ${authorName} <${authorEmail}>`
     )
     const sourceShortName = rtrim(source.constructor.name, "Source")
 
@@ -74,3 +74,4 @@ Date: ${dateFormatterFull.format(date)}`,
 }
 
 run()
+
