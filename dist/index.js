@@ -98,11 +98,11 @@ const common_1 = __webpack_require__(979);
 const utils_1 = __webpack_require__(918);
 async function run() {
     try {
-        const { source, username, authorName, authorEmail } = await options_1.default();
+        const { source, username, authorName, authorEmail, limit1year } = options_1.default();
         // TODO: redact username / instance url?
         // In commit messages to distinguish lastSynced.
         const activitySetID = utils_1.simpleSHA1(`${source}|${username}`);
-        core.info(`Source: ${source}\nUsername: ${username}\nActivity Set ID:${activitySetID}\nCommit author: ${authorName} <${authorEmail}>`);
+        core.info(`Source: ${source}\nUsername: ${username}\nActivity Set ID: ${activitySetID}\nCommit author: ${authorName} <${authorEmail}>`);
         const sourceShortName = utils_1.rtrim(source.constructor.name, "Source");
         const git = await git_1.GitController.createAsync(process.cwd());
         const lastSynced = await git.getLastAuthorDate({
@@ -111,21 +111,25 @@ async function run() {
         });
         core.info(`Last synced: ${lastSynced}`);
         if (lastSynced < new Date(0)) {
+            // .warning quotes LF
             core.warning("No previous commits for this source/username are found.");
             core.warning("If it is not the first run, then make sure the repo is fully checked out.");
         }
-        const calendar = await source.getCalendar(username, lastSynced);
-        // Sort here to ensure lastSynced works. See git.ts:getLastAuthorDate for more notes.
+        const laterThan = limit1year
+            ? new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()))
+            : lastSynced;
+        const calendar = await source.getCalendar(username, laterThan);
+        // Sort here to ensure laterThan works. See git.ts:getLastAuthorDate for more notes.
         // The default fn compares .toString()
         // Ref: https://gist.github.com/onpubcom/1772996#gistcomment-1457940
         calendar.sort((a, b) => a.getTime() - b.getTime());
         for (const date of calendar) {
             // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
             // TODO: bisect
-            if (date > lastSynced) {
+            if (date > laterThan) {
                 const dateText = await git.commit(`Synced activities at ${utils_1.dateFormatterMedium.format(date)} from ${sourceShortName}
 
-Activity Set ID:${activitySetID}
+Activity Set ID: ${activitySetID}
 Source: ${source}
 Username: ${username}
 Date: ${utils_1.dateFormatterFull.format(date)}`, true, {
@@ -1231,6 +1235,7 @@ function getOptionsFromInputs() {
     const username = core.getInput("username");
     const authorName = core.getInput("author-name");
     const authorEmail = core.getInput("author-email");
+    const limit1year = core.getInput("limit1year") === "true";
     // The action runtime will return empty strings instead of undefined for unfilled fields.
     assert_1.default(sourceType);
     assert_1.default(username);
@@ -1244,6 +1249,7 @@ function getOptionsFromInputs() {
         username,
         authorName,
         authorEmail,
+        limit1year,
     };
     return options;
 }
@@ -3487,26 +3493,22 @@ class MediaWikiSource extends base_1.BaseActivitySource {
         this.instanceUrl = instance;
         core.debug("Using WikiPedia instance: " + this.instanceUrl);
     }
-    async getCalendar(username, lastSynced) {
+    async getCalendar(username, laterThan) {
         var _a, _b, _c;
-        core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
-        // TODO: or instead allow to specify the maximum time range in inputs
-        const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
-        core.debug(`Effective time bound: ${oldBound}`);
+        core.debug(`Getting activities calendar for ${username} starting from ${laterThan}`);
         const contribs = [];
         let partialContribs;
         let uccontinue = undefined;
         do {
-            const result = await this.queryUserContribs(username, oldBound.toISOString(), uccontinue);
+            const result = await this.queryUserContribs(username, laterThan.toISOString(), uccontinue);
             partialContribs = (_a = result.query.usercontribs) !== null && _a !== void 0 ? _a : [];
             contribs.push(...Array.from(partialContribs));
             uccontinue = (_b = result === null || result === void 0 ? void 0 : result.continue) === null || _b === void 0 ? void 0 : _b.uccontinue;
             core.debug(`Current chunk size: ${(_c = partialContribs === null || partialContribs === void 0 ? void 0 : partialContribs.length) !== null && _c !== void 0 ? _c : -1}, current cumulative size: ${contribs.length}, next uccontinue: ${uccontinue}`);
-            console.log(partialContribs);
         } while (partialContribs &&
             partialContribs.length > 0 &&
             uccontinue &&
-            new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound);
+            new Date(partialContribs[partialContribs.length - 1].timestamp) > laterThan);
         if (contribs.length > 0) {
             core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`);
             core.debug(`First contrib of the last chunk is at ${partialContribs[0].timestamp}`);
@@ -3517,7 +3519,7 @@ class MediaWikiSource extends base_1.BaseActivitySource {
         const calendar = [];
         for (const contrib of contribs) {
             const date = new Date(contrib.timestamp);
-            if (date > oldBound) {
+            if (date > laterThan) {
                 calendar.push(date);
             }
         }
@@ -3614,7 +3616,7 @@ class GitLabSource extends base_1.BaseActivitySource {
         }
         core.debug("Using GitLab instance: " + this.instanceUrl);
     }
-    async getCalendar(username, lastSynced) {
+    async getCalendar(username, laterThan) {
         const url = utils_1.joinUrl(this.instanceUrl, `/users/${username}/calendar.json`);
         core.debug("Calendar API URL: " + url);
         const response = await node_fetch_1.default(url, {
@@ -3628,7 +3630,7 @@ class GitLabSource extends base_1.BaseActivitySource {
             for (let i = 0; i < raw[yyyymmdd]; i++) {
                 // A little trick to distinguish activities between each other within one day
                 const offsetDate = new Date(date.getTime() + i * 1000);
-                if (offsetDate > lastSynced) {
+                if (offsetDate > laterThan) {
                     calendar.push(offsetDate);
                 }
             }
@@ -3723,7 +3725,7 @@ class LeetCodeSource extends base_1.BaseActivitySource {
                 throw Error(`Supported instances are us and cn only, not ${JSON.stringify(instance)}`);
         }
     }
-    async getCalendar(username, lastSynced = new Date(-1)) {
+    async getCalendar(username, laterThan) {
         // const userProfile = await getUserProfile(username)
         const submissionCalendar = await this.getSubmissionCalendar(username);
         const calendar = [];
@@ -3734,7 +3736,7 @@ class LeetCodeSource extends base_1.BaseActivitySource {
             for (let i = 0; i < submissionCalendar[timestamp]; i++) {
                 // A little trick to distinguish activities between each other within one day
                 const offsetDate = new Date(date.getTime() + i * 1000);
-                if (offsetDate > lastSynced) {
+                if (offsetDate > laterThan) {
                     // TODO: will it lose some new activities added in a day later?
                     calendar.push(offsetDate);
                 }
@@ -3863,11 +3865,10 @@ class GerritSource extends base_1.BaseActivitySource {
         }
         core.debug("Using Gerrit instance: " + this.instanceUrl);
     }
-    async getCalendar(username, lastSynced) {
+    async getCalendar(username, laterThan) {
         var _a;
-        core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`);
+        core.debug(`Getting activities calendar for ${username} starting from ${laterThan}`);
         // TODO: or instead allow to specify the maximum time range in inputs
-        const oldBound = new Date(Math.max(lastSynced.getTime(), utils_1.oneYearAgo().getTime()));
         let offset = 0;
         const changes = [];
         let partialChanges;
@@ -3878,13 +3879,13 @@ class GerritSource extends base_1.BaseActivitySource {
             core.debug(`Current chunk size: ${partialChanges.length}, current cumulative size: ${changes.length}, next offset: ${offset}`);
         } while (partialChanges.length > 0 &&
             partialChanges[partialChanges.length - 1]._more_changes === true &&
-            new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound);
+            new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > laterThan);
         core.debug(`Last change created at ${changes[changes.length - 1].created}`);
         core.debug(`First change of the last chunk created at ${(_a = partialChanges[0]) === null || _a === void 0 ? void 0 : _a.created}`);
         const calendar = [];
         for (const change of changes) {
             const date = new Date(`${change.created} UTC`);
-            if (date > oldBound) {
+            if (date > laterThan) {
                 calendar.push(date);
             }
         }
