@@ -1,7 +1,7 @@
 [![Build and Test](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
 
 # Sync Contrib Calendar Action
-(WIP) A :octocat:🔀 GitHub action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
+A :octocat:🔀 GitHub action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
 
 ## What it actually does?
 For every contribution/activity on other platforms, it accordingly creates an emtpy commit to light (or deepen the color of) a little square on the contribution graph.
@@ -20,9 +20,10 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - uses: gowee/sync-contrib-calendar-action@v0.0.1-alpha
+    - uses: gowee/sync-contrib-calendar-action@v0.1-alpha
       with:
-        leetcode_username: <USERNAME>
+        source: gitlab
+        username: SOME_USERNAME
 ```
 The above workflow is intentionally simplified. For a complete workflow that runs on schedule automatically, refers to [examples](https://github.com/Gowee/sync-contrib-calendar-action/tree/main/examples).
 
@@ -34,5 +35,5 @@ Outgoing requests are made only to fetch actitivies from data sources such as Gi
 But be reminded that the software is provided as-is, with NO WARRANTY. 
 
 ### Caveat
-The action is still under heavy development and have all its functions unstable with few test cases, which, in the worst cases, may result in tons of repeated commits unexpectedly.
+The action is not well tested, which, in the worst cases, may result in tons of repeated commits unexpectedly.
 It is strongly recommended to create a new repository for the action to work separately.
