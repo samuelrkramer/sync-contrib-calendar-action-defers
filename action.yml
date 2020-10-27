@@ -11,6 +11,10 @@ inputs:
   username:
     required: true
     description: "The account username on the specified source"
+  limit1year:
+    required: true
+    description: "Whether to limit the earliest time to one year ago"
+    default: "true"
   token:
     required: true
     description: "GitHub personal access token (PAT)"

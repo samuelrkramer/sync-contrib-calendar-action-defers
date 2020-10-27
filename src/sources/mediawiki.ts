@@ -4,7 +4,7 @@ import * as core from "@actions/core"
 
 import { JSON_REQUEST_HEADERS } from "../common"
 import { BaseActivitySource } from "./base"
-import { constructURLParamString, isWikiMediaProject, joinUrl, oneYearAgo } from "../utils"
+import { constructURLParamString, isWikiMediaProject, joinUrl } from "../utils"
 
 export interface UserContribsQueryResult {
   batchcomplete: string
@@ -56,12 +56,8 @@ export default class MediaWikiSource extends BaseActivitySource {
     core.debug("Using WikiPedia instance: " + this.instanceUrl)
   }
 
-  async getCalendar(username: string, lastSynced: Date): Promise<Date[]> {
-    core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`)
-    // TODO: or instead allow to specify the maximum time range in inputs
-    const oldBound = new Date(Math.max(lastSynced.getTime(), oneYearAgo().getTime()))
-
-    core.debug(`Effective time bound: ${oldBound}`)
+  async getCalendar(username: string, laterThan: Date): Promise<Date[]> {
+    core.debug(`Getting activities calendar for ${username} starting from ${laterThan}`)
 
     const contribs = []
     let partialContribs: UsercontribsEntity[] | null | undefined
@@ -69,7 +65,7 @@ export default class MediaWikiSource extends BaseActivitySource {
     do {
       const result: UserContribsQueryResult = await this.queryUserContribs(
         username,
-        oldBound.toISOString(),
+        laterThan.toISOString(),
         uccontinue
       )
       partialContribs = result.query.usercontribs ?? []
@@ -80,12 +76,11 @@ export default class MediaWikiSource extends BaseActivitySource {
           contribs.length
         }, next uccontinue: ${uccontinue}`
       )
-      console.log(partialContribs)
     } while (
       partialContribs &&
       partialContribs.length > 0 &&
       uccontinue &&
-      new Date(partialContribs[partialContribs.length - 1].timestamp) > oldBound
+      new Date(partialContribs[partialContribs.length - 1].timestamp) > laterThan
     )
     if (contribs.length > 0) {
       core.debug(`Last contrib is at ${contribs[contribs.length - 1].timestamp}`)
@@ -99,7 +94,7 @@ export default class MediaWikiSource extends BaseActivitySource {
     const calendar = []
     for (const contrib of contribs) {
       const date = new Date(contrib.timestamp)
-      if (date > oldBound) {
+      if (date > laterThan) {
         calendar.push(date)
       }
     }

@@ -10,6 +10,7 @@ export interface Options {
   username: string
   authorName: string
   authorEmail: string
+  limit1year: boolean
 }
 
 export default function getOptionsFromInputs(): Options {
@@ -18,6 +19,7 @@ export default function getOptionsFromInputs(): Options {
   const username = core.getInput("username")
   const authorName = core.getInput("author-name")
   const authorEmail = core.getInput("author-email")
+  const limit1year = core.getInput("limit1year") === "true"
 
   // The action runtime will return empty strings instead of undefined for unfilled fields.
   assert(sourceType)
@@ -34,6 +36,7 @@ export default function getOptionsFromInputs(): Options {
     username,
     authorName,
     authorEmail,
+    limit1year,
   }
   return options
 }
