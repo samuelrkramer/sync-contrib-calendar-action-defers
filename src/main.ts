@@ -33,9 +33,8 @@ async function run(): Promise<void> {
     })
     core.info(`Last synced: ${lastSynced}`)
     if (lastSynced < new Date(0)) {
-      // .warning quotes LF
-      core.warning("No previous commits for this source/username are found.")
-      core.warning("If it is not the first run, then make sure the repo is fully checked out.")
+      core.warning(`No previous commits for this source/username are found.
+If it is not the first run, then make sure the repo is fully checked out.`)
     }
     const laterThan = limit1year
       ? new Date(Math.max(lastSynced.getTime(), oneYearAgo().getTime()))
