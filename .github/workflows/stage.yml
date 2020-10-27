@@ -24,7 +24,7 @@ jobs:
     - run: yarn package
     - run: |
         git remote set-branches origin '*'
-        git fetch --depth 1 staging
+        git fetch --depth 1
         git checkout staging
         git merge -X ours "${GITHUB_REF#refs/heads/}" 
         git add -f dist/
