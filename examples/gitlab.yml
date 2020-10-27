@@ -4,9 +4,10 @@ on:
   # Allow manually triggering in repos' Action tab
   workflow_dispatch:
 
-  # Schedule the workflow to run every day at 00:00am
+  # Schedule the workflow to run every eight hours
+  # 27 is randomly chosen to avoid collisions or jam
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "27 */8 * * *"
 
 jobs:
   sync:
@@ -21,11 +22,11 @@ jobs:
       # Optionally, specify a timezone, which will be used in GIT_AUTHOR_DATE.
       # But it does not make much sense as most sources groups activities by days
       # without considering the timezone.
-      - uses: actions/set-timezone-action@v1.1
+      - uses: szenius/set-timezone-action@v1.0
         with:
           timezoneLinux: "Asia/Shanghai"
 
-      - uses: gowee/sync-contrib-calendar-action@v0.1
+      - uses: gowee/sync-contrib-calendar-action@v0.1-alpha
         with:
           source: gitlab
           # Or, equivalently, left empty for the default instance.
