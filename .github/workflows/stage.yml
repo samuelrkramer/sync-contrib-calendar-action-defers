@@ -1,0 +1,30 @@
+name: Stage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  stage:
+    name: "Build Dist"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.ref }}
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12'
+    - run: yarn install
+    - run: yarn build
+    - run: yarn dist
+    - run: |
+        git checkout staging
+        git merge -X ours "${GITHUB_REF#refs/heads/}" 
+        git add -f dist/
+        git commit -m "Build dist"
+        git push
