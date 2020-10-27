@@ -32,7 +32,8 @@ async function run(): Promise<void> {
     })
     core.info(`Last synced: ${lastSynced}`)
     if (lastSynced < new Date(0)) {
-      core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
+      core.warning("No previous commits for this source/username are found.")
+      core.warning("If it is not the first run, then make sure the repo is fully checked out.")
     }
     const calendar = await source.getCalendar(username, lastSynced)
     // Sort here to ensure lastSynced works. See git.ts:getLastAuthorDate for more notes.
@@ -42,9 +43,8 @@ async function run(): Promise<void> {
 
     for (const date of calendar) {
       // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
+      // TODO: bisect
       if (date > lastSynced) {
-        // daysCommited += 1
-        // for (let i = 0; i < submissionCalendar[timestamp]; i++) {
         const dateText = await git.commit(
           `Synced activities at ${dateFormatterMedium.format(date)} from ${sourceShortName}
 
@@ -66,12 +66,9 @@ Date: ${dateFormatterFull.format(date)}`,
     core.info(`Activities committed: ${calendar.length}`)
     await git.push()
     core.info("Pushed")
-
-    // core.setOutput("time", new Date().toTimeString())
   } catch (error) {
     core.setFailed(error.message)
   }
 }
 
 run()
-
