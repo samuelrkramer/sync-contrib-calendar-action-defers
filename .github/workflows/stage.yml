@@ -31,5 +31,8 @@ jobs:
     - name: "Pushing new build"
       run: |
         git add -f dist/
-        git commit -m "Build dist"
+        git diff-index --quiet HEAD || git commit -m "Build dist"
         git push
+
+# Check `git diff-index --quiet HEAD` first, then to commit only if necessary
+# Ref: https://stackoverflow.com/a/8123841/5488616
