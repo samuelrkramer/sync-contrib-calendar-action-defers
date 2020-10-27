@@ -1,4 +1,5 @@
-[![Build and Test](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
+[![Build and Test workflow status badge](https://github.com/Gowee/sync-contrib-calendar-action/workflows/Build%20and%20Test/badge.svg)](https://github.com/Gowee/sync-contrib-calendar-action/actions)
+[![Relese version badge](https://img.shields.io/github/v/release/Gowee/sync-contrib-calendar-action.svg)](https://github.com/Gowee/intray/releases/)
 
 # Sync Contrib Calendar Action
 A :octocat:🔀 GitHub action that helps grabs activities from GitLab, LeetCode, etc., to populate the contribution calendar graph on GitHub. 
