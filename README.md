@@ -26,7 +26,8 @@ jobs:
         source: gitlab
         username: SOME_USERNAME
 ```
-The above workflow is intentionally simplified. For __a complete workflow__ that runs on schedule automatically, refers to [examples](https://github.com/Gowee/sync-contrib-calendar-action/tree/main/examples).
+The above workflow is intentionally simplified.
+For __a complete workflow__ that runs on schedule automatically, refers to [examples](https://github.com/Gowee/sync-contrib-calendar-action/tree/main/examples).
 
 
 ## Notes
