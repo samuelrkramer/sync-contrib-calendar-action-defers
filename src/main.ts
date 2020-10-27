@@ -4,7 +4,7 @@ import * as core from "@actions/core"
 
 import getOptionsFromInputs from "./options"
 import { GitController } from "./git"
-import { COMMITTER_EMAIL, COMMITTER_NAME } from "./common"
+import { COMMITTER_EMAIL, COMMITTER_NAME, USER_AGENT } from "./common"
 import {
   dateFormatterFull,
   dateFormatterMedium,
@@ -15,6 +15,7 @@ import {
 } from "./utils"
 
 async function run(): Promise<void> {
+  core.info(USER_AGENT)
   try {
     const { source, username, authorName, authorEmail, limit1year } = getOptionsFromInputs()
     // TODO: redact username / instance url?
@@ -68,7 +69,17 @@ Date: ${dateFormatterFull.format(date)}`,
       }
     }
     core.info(`Activities committed: ${calendar.length}`)
-    await git.push()
+    try {
+      await git.push()
+    } catch (e) {
+      core.error(`Error when pushing!
+
+If the log shows there is conflict, then check if multiple workflows are running simultaneous
+or if the job is rerun manually against a stale commit.
+
+Otherwise, please open a new issue if necessary.`)
+      throw e
+    }
     core.info("Pushed")
   } catch (error) {
     core.setFailed(error.message)
