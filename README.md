@@ -7,7 +7,7 @@ A :octocat:🔀 GitHub action that helps grabs activities from GitLab, LeetCode,
 For every contribution/activity on other platforms, it accordingly creates an emtpy commit at that time point to light (or deepen the color of) a little square on the contribution graph.
 
 ## Setup
-Create a new empty repository and activate the action by applying the following <abbr title="Minimum Viable Product">MVP</abbr> workflow (e.g. into `.github/workflows/sync-leetcode.yml`). After that, manually trigger the workflow in the Action tab. 
+Create a new empty repository and activate the action by applying the following <abbr title="Minimum Viable Product">MVP</abbr> workflow (e.g. into `.github/workflows/sync-gitlab.yml`). After that, manually trigger the workflow in the Action tab. 
 
 ```yml
 on: 
