@@ -29,6 +29,6 @@ jobs:
       - uses: gowee/sync-contrib-calendar-action@v0.1-alpha
         with:
           source: gitlab
-          # Or, equivalently, left empty for the default instance.
-          instance: "https://gitlab.com/"
+          # Left unspecified for the default instance.
+          # instance: "https://gitlab.com/"
           username: SOMEONE # As is
