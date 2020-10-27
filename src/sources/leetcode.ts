@@ -127,7 +127,7 @@ export default class LeetCodeSource extends BaseActivitySource {
 
   private getSubmissionCalendar: { (username: string): Promise<UserSubmissionCalendarQueryResult> }
 
-  async getCalendar(username: string, lastSynced = new Date(-1)): Promise<Date[]> {
+  async getCalendar(username: string, laterThan: Date): Promise<Date[]> {
     // const userProfile = await getUserProfile(username)
     const submissionCalendar = await this.getSubmissionCalendar(username)
     const calendar = []
@@ -138,7 +138,7 @@ export default class LeetCodeSource extends BaseActivitySource {
       for (let i = 0; i < submissionCalendar[timestamp]; i++) {
         // A little trick to distinguish activities between each other within one day
         const offsetDate = new Date(date.getTime() + i * 1000)
-        if (offsetDate > lastSynced) {
+        if (offsetDate > laterThan) {
           // TODO: will it lose some new activities added in a day later?
           calendar.push(offsetDate)
         }

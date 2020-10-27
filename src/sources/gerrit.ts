@@ -4,7 +4,7 @@ import * as core from "@actions/core"
 
 import { JSON_REQUEST_HEADERS } from "../common"
 import { BaseActivitySource } from "./base"
-import { joinUrl, oneYearAgo } from "../utils"
+import { joinUrl } from "../utils"
 
 export interface ChangeEntryQueryResult {
   id: string
@@ -73,10 +73,9 @@ export default class GerritSource extends BaseActivitySource {
     core.debug("Using Gerrit instance: " + this.instanceUrl)
   }
 
-  async getCalendar(username: string, lastSynced: Date): Promise<Date[]> {
-    core.debug(`Getting activities calendar for ${username} starting from ${lastSynced}`)
+  async getCalendar(username: string, laterThan: Date): Promise<Date[]> {
+    core.debug(`Getting activities calendar for ${username} starting from ${laterThan}`)
     // TODO: or instead allow to specify the maximum time range in inputs
-    const oldBound = new Date(Math.max(lastSynced.getTime(), oneYearAgo().getTime()))
     let offset = 0
     const changes = []
     let partialChanges
@@ -90,7 +89,7 @@ export default class GerritSource extends BaseActivitySource {
     } while (
       partialChanges.length > 0 &&
       partialChanges[partialChanges.length - 1]._more_changes === true &&
-      new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > oldBound
+      new Date(`${partialChanges[partialChanges.length - 1].created} UTC`) > laterThan
     )
     core.debug(`Last change created at ${changes[changes.length - 1].created}`)
     core.debug(`First change of the last chunk created at ${partialChanges[0]?.created}`)
@@ -98,7 +97,7 @@ export default class GerritSource extends BaseActivitySource {
     const calendar = []
     for (const change of changes) {
       const date = new Date(`${change.created} UTC`)
-      if (date > oldBound) {
+      if (date > laterThan) {
         calendar.push(date)
       }
     }

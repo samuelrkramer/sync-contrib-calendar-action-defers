@@ -25,7 +25,7 @@ export default class GitLabSource extends BaseActivitySource {
     core.debug("Using GitLab instance: " + this.instanceUrl)
   }
 
-  async getCalendar(username: string, lastSynced: Date): Promise<Date[]> {
+  async getCalendar(username: string, laterThan: Date): Promise<Date[]> {
     const url = joinUrl(this.instanceUrl, `/users/${username}/calendar.json`)
     core.debug("Calendar API URL: " + url)
     const response = await fetch(url, {
@@ -40,7 +40,7 @@ export default class GitLabSource extends BaseActivitySource {
       for (let i = 0; i < raw[yyyymmdd]; i++) {
         // A little trick to distinguish activities between each other within one day
         const offsetDate = new Date(date.getTime() + i * 1000)
-        if (offsetDate > lastSynced) {
+        if (offsetDate > laterThan) {
           calendar.push(offsetDate)
         }
       }
