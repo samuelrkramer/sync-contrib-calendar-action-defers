@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: ${{ github.ref }}
+        fetch-depth: 0
     - uses: actions/setup-node@v1
       with:
         node-version: '12'
@@ -23,8 +23,6 @@ jobs:
     - run: yarn build
     - run: yarn package
     - run: |
-        git remote set-branches origin '*'
-        git fetch --depth 1
         git checkout staging
         git merge -X ours "${GITHUB_REF#refs/heads/}" 
         git add -f dist/
