@@ -1,6 +1,9 @@
 name: 'Sync Contrib Calendar Action'
 description: 'Illuminate the GitHub contribution graph with activities from GitLab, LeetCode, MediaWiki, etc.'
 author: 'Hung-I Wang <whygowe@gmail.com>'
+branding:
+  icon: 'activity'
+  color: 'blue'
 inputs:
   source:
     required: true
