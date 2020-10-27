@@ -35,7 +35,10 @@ async function run(): Promise<void> {
       core.warning("No previous commits by this action are found. Is this repo a shallow clone?")
     }
     const calendar = await source.getCalendar(username, lastSynced)
-    calendar.sort() // See git.ts:getLastCommitDate for more notes.
+    // Sort here to ensure lastSynced works. See git.ts:getLastAuthorDate for more notes.
+    // The default fn compares .toString()
+    // Ref: https://gist.github.com/onpubcom/1772996#gistcomment-1457940
+    calendar.sort((a, b) => a.getTime() - b.getTime())
 
     for (const date of calendar) {
       // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
