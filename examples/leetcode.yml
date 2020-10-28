@@ -26,7 +26,7 @@ jobs:
         with:
           timezoneLinux: "Asia/Shanghai"
 
-      - uses: gowee/sync-contrib-calendar-action@v0.1-alpha
+      - uses: gowee/sync-contrib-calendar-action@0.1-alpha
         with:
           source: leetcode
           # Either "us" (the default) for leetcode.com, or "cn" for leetcode-cn.com

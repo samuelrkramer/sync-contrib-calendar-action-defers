@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - uses: gowee/sync-contrib-calendar-action@v0.1-alpha
+    - uses: gowee/sync-contrib-calendar-action@0.1-alpha
       with:
         source: gitlab
         username: SOME_USERNAME
