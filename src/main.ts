@@ -50,6 +50,11 @@ If it is not the first run, then make sure the repo is fully checked out.`)
       // TODO: really need to recheck date again now that it has benn done in source.getCalendar?
       // TODO: bisect
       if (date > laterThan) {
+
+        if (date.getDay() === 6) {
+          date.setDate(date.getDate()+1);
+        }
+
         const dateText = await git.commit(
           `Synced activities at ${dateFormatterMedium.format(date)} from ${sourceShortName}
 
