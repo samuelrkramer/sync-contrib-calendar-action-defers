@@ -51,8 +51,8 @@ If it is not the first run, then make sure the repo is fully checked out.`)
       // TODO: bisect
       if (date > laterThan) {
 
-        if (date.getDay() === 6) {
-          date.setDate(date.getDate()+1);
+        if (date.getDay() === 6) { // if the date is a Saturday
+          date.setDate(date.getDate()+1); // increment it to the next day (Date object handles overflowing month)
         }
 
         const dateText = await git.commit(
